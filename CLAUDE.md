@@ -28,7 +28,9 @@ This document provides comprehensive guidance for Claude Code AI when working wi
 - **BiomeJS** - Ultra-fast linting and formatting (replaces ESLint + Prettier)
 - **Lefthook** - Git hooks manager (lightweight alternative to Husky)
 - **Vitest** - Fast unit testing with coverage enforcement (≥80%)
-- **tsup** - Zero-config library bundler (esbuild-based)
+- **tsdown** - Modern library bundler (Rolldown/Rust-based, successor to tsup)
+  - **Alternative:** pkgroll (zero-config, Rollup-based, configured via package.json only)
+- **publint** - Package validator ensuring correct npm configuration before publish
 
 ### CI/CD & Automation
 - **GitHub Actions** - All automation workflows
@@ -68,7 +70,9 @@ node-project-starter/
 │   ├── deployment/
 │   │   ├── security.md         # Security practices & verification
 │   │   └── branch-protection.md # Branch protection setup guide
-│   └── api/                    # API documentation
+│   ├── api/                    # API documentation
+│   ├── BUNDLER_CHOICE.md       # tsdown vs pkgroll guide
+│   └── IMPLEMENTATION_PLAN.md  # Complete implementation plan
 ├── src/
 │   └── index.ts                # Main entry point and library code
 ├── tests/
@@ -77,7 +81,8 @@ node-project-starter/
 ├── lefthook.yml                # Git hooks configuration
 ├── package.json                # Package manifest
 ├── tsconfig.json               # TypeScript configuration
-├── tsup.config.ts              # Build configuration
+├── tsdown.config.ts            # Build configuration (tsdown) OR
+│                               # pkgroll (no config file - uses package.json)
 ├── vitest.config.ts            # Test configuration
 ├── .npmrc                      # NPM configuration (provenance enabled)
 ├── renovate.json               # Renovate dependency updates
@@ -117,9 +122,40 @@ node-project-starter/
 
 ### TypeScript (tsconfig.json)
 - Strict mode enabled
-- ESM module resolution
+- ESM module resolution (`moduleResolution: bundler`)
 - Declaration files generated
 - Source maps for debugging
+
+### Build Configuration
+
+**Option 1: tsdown (Recommended)**
+- Rust-based bundler (successor to tsup)
+- ~2x faster bundling than tsup
+- ~8x faster .d.ts generation
+- Auto-reads target from `engines.node`
+- Supports Rolldown/Rollup/unplugin plugins
+- Vue/React/Solid/Svelte support
+- Config: `tsdown.config.ts`
+
+**Option 2: pkgroll (Alternative)**
+- Zero-config approach (no config file)
+- All configuration via `package.json`
+- Best-in-class tree-shaking (Rollup)
+- Cleanest CommonJS output
+- Auto-maps `./dist/` to `./src/`
+- Config: None (package.json only)
+
+**publint (Always Included)**
+- Validates package configuration
+- Checks `exports` field correctness
+- Detects ESM/CJS format issues
+- Ensures TypeScript types exported properly
+- Catches publishing mistakes before npm publish
+
+**Choosing a Bundler:**
+See `docs/BUNDLER_CHOICE.md` for detailed comparison and migration guide.
+- **tsdown:** Recommended for most projects (fastest, plugin support, framework compatibility)
+- **pkgroll:** Alternative for zero-config purists (best tree-shaking, cleanest CJS)
 
 ### Release Please (release-please-config.json)
 - Conventional commits parsing
@@ -397,7 +433,7 @@ The project uses `.claude/settings.json` with the following hooks:
 ```json
 {
   "dev": "TypeScript watch mode for development",
-  "build": "Build library with tsup",
+  "build": "Build library with tsdown or pkgroll",
   "test": "Run Vitest tests",
   "test:watch": "Run tests in watch mode",
   "test:ui": "Interactive test UI",
@@ -405,9 +441,12 @@ The project uses `.claude/settings.json` with the following hooks:
   "typecheck": "TypeScript type checking",
   "check": "Run BiomeJS check (lint + format)",
   "format": "Format code with BiomeJS",
-  "lint": "Lint code with BiomeJS"
+  "lint": "Lint code with BiomeJS",
+  "prepublishOnly": "npm run build && publint --strict"
 }
 ```
+
+**Note:** `prepublishOnly` automatically runs build and validates package before publishing to npm.
 
 ## Troubleshooting
 
@@ -424,7 +463,14 @@ lefthook install  # Reinstall Git hooks
 ### Build Failures
 - Check TypeScript errors: `npm run typecheck`
 - Ensure all imports are correct
-- Verify tsup configuration
+- Verify bundler configuration (tsdown.config.ts or package.json for pkgroll)
+
+### publint Validation Errors
+- Run `npx publint --strict` to see detailed issues
+- Check `exports` field in package.json
+- Ensure `types` condition comes first in exports
+- Verify ESM/CJS file extensions match format
+- Review package.json `files` field
 
 ### Test Failures
 - Run tests locally: `npm test`
@@ -472,7 +518,10 @@ lefthook install  # Reinstall Git hooks
 ### Technical Documentation
 - **BiomeJS**: https://biomejs.dev/
 - **Vitest**: https://vitest.dev/
-- **tsup**: https://tsup.egoist.dev/
+- **tsdown**: https://tsdown.dev/
+- **pkgroll**: https://github.com/privatenumber/pkgroll
+- **publint**: https://publint.dev/
+- **Bundler Comparison**: See docs/BUNDLER_CHOICE.md
 - **Lefthook**: https://github.com/evilmartians/lefthook
 
 ### Security & Supply Chain

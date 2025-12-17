@@ -57,8 +57,8 @@ This document outlines the complete implementation plan for the Node Project Sta
 - [ ] Set package metadata (name, version, description, author, license)
 - [ ] Configure as ESM module (`"type": "module"`)
 - [ ] Define all package scripts:
-  - `dev` - TypeScript watch mode
-  - `build` - Build with tsup
+  - `dev` - TypeScript watch mode with bundler watch
+  - `build` - Build with tsdown or pkgroll
   - `test` - Run Vitest tests
   - `test:watch` - Watch mode tests
   - `test:ui` - Interactive test UI
@@ -68,6 +68,7 @@ This document outlines the complete implementation plan for the Node Project Sta
   - `format` - BiomeJS format
   - `lint` - BiomeJS lint
   - `prepare` - Lefthook install (on npm install)
+  - `prepublishOnly` - Build and validate with publint before publish
 
 - [ ] Add dependencies:
   ```json
@@ -84,21 +85,28 @@ This document outlines the complete implementation plan for the Node Project Sta
     "@types/node": "^20.x.x",
     "@vitest/ui": "latest",
     "lefthook": "latest",
-    "tsup": "latest",
+    "publint": "latest",
+    "tsdown": "latest",
     "typescript": "^5.x.x",
     "vitest": "latest"
   }
   ```
+  **Note:** Replace `"tsdown": "latest"` with `"pkgroll": "latest"` if choosing pkgroll
 
-- [ ] Configure exports:
+- [ ] Configure exports (critical for publint validation):
   ```json
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
-  }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts"
   ```
+  **Note:** Adjust paths based on bundler output structure
 
 - [ ] Set Node.js engine requirement: `"node": ">=20"`
 
@@ -115,14 +123,15 @@ This document outlines the complete implementation plan for the Node Project Sta
 - [ ] Create tsconfig.json with:
   - `"strict": true`
   - `"module": "ESNext"`
-  - `"moduleResolution": "bundler"`
+  - `"moduleResolution": "bundler"` (important for TypeScript 5.0+)
   - `"target": "ES2022"`
   - `"declaration": true`
   - `"declarationMap": true`
   - `"sourceMap": true`
-  - Path aliases: `"@/*": ["./src/*"]`
+  - `"skipLibCheck": true` (recommended for library projects)
+  - Path aliases: `"@/*": ["./src/*"]` (optional)
   - Include: `["src/**/*"]`
-  - Exclude: `["node_modules", "dist", "build"]`
+  - Exclude: `["node_modules", "dist", "build", "coverage"]`
 
 **Deliverables:**
 - tsconfig.json configured for strict ESM library development
@@ -201,19 +210,43 @@ This document outlines the complete implementation plan for the Node Project Sta
 
 ### 2.4 Build Configuration
 
-**Objective:** Configure tsup for library bundling.
+**Objective:** Configure bundler (tsdown or pkgroll) for library building.
+
+**IMPORTANT:** Choose ONE bundler option (see `docs/BUNDLER_CHOICE.md` for detailed comparison):
+
+**Option 1: tsdown (Recommended)**
 
 **Tasks:**
-- [ ] Create tsup.config.ts with:
+- [ ] Install tsdown: `npm install -D tsdown`
+- [ ] Create tsdown.config.ts with:
   - Entry point: `src/index.ts`
-  - Format: ESM
+  - Format: ESM (and optionally CJS)
   - DTS generation enabled
   - Source maps enabled
   - Clean dist before build
+  - Target from `engines.node` in package.json
   - Minification options
 
+**Option 2: pkgroll (Alternative - Zero Config)**
+
+**Tasks:**
+- [ ] Install pkgroll: `npm install -D pkgroll`
+- [ ] Configure package.json with:
+  - `exports` field mapping `./dist/*` to entry points
+  - `main`, `module`, `types` fields pointing to dist
+  - `files` field including dist directory
+  - No config file needed - pkgroll reads everything from package.json
+
+**After choosing bundler:**
+- [ ] Install publint: `npm install -D publint`
+- [ ] Add `prepublishOnly` script: `npm run build && publint --strict`
+- [ ] Test build: `npm run build`
+- [ ] Validate with publint: `npx publint --strict`
+
 **Deliverables:**
-- tsup.config.ts for efficient library building
+- Bundler configured (tsdown.config.ts OR package.json for pkgroll)
+- publint validation setup
+- Working build process
 
 ---
 
