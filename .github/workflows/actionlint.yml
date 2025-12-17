@@ -39,24 +39,40 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Run actionlint
-        uses: reva2/actions-toolkit/actionlint@v1
+        id: actionlint
+        uses: raven-actions/actionlint@963d4779ef039e217e5d0e6fd73ce9ab7764e493 # v2.1.0
         with:
           matcher: true
           cache: true
           fail-on-error: true
 
       - name: Actionlint Summary
-        if: always()
+        if: always() && steps.actionlint.outputs.exit-code != '0'
         run: |
-          if [ "${{ job.status }}" == "success" ]; then
-            echo "## ✅ All GitHub Actions workflows are valid!" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "No syntax errors found in workflow files." >> $GITHUB_STEP_SUMMARY
-          else
-            echo "## ❌ Workflow validation failed!" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Please check the actionlint output above for details." >> $GITHUB_STEP_SUMMARY
-          fi
+          {
+            echo "### ❌ Actionlint Results"
+            echo ""
+            echo "**Version:** ${{ steps.actionlint.outputs.version-semver }}"
+            echo "**Release:** ${{ steps.actionlint.outputs.version-tag }}"
+            echo "**Exit Code:** ${{ steps.actionlint.outputs.exit-code }}"
+            echo "**Exit Message:** ${{ steps.actionlint.outputs.exit-message }}"
+            echo "**Total Errors:** ${{ steps.actionlint.outputs.total-errors }}"
+            echo "**Files Checked:** ${{ steps.actionlint.outputs.total-files }}"
+            echo "**Cache Hit:** ${{ steps.actionlint.outputs.cache-hit }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+      - name: Success Summary
+        if: steps.actionlint.outputs.exit-code == '0'
+        run: |
+          {
+            echo "### ✅ Actionlint Passed"
+            echo ""
+            echo "All workflow files are valid!"
+            echo ""
+            echo "**Files Checked:** ${{ steps.actionlint.outputs.total-files }}"
+            echo "**Version:** ${{ steps.actionlint.outputs.version-semver }}"
+          } >> "$GITHUB_STEP_SUMMARY"
