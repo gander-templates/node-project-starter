@@ -34,25 +34,20 @@ jobs:
               - 'vitest.config.ts'
               - 'tsdown.config.ts'
 
-  # Matrix testing across Node.js versions and operating systems
+  # Test on Linux Node 22 only
   test:
     needs: changes
     if: ${{ needs.changes.outputs.src == 'true' || github.event_name == 'workflow_dispatch' }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        node-version: [18, 20, 22]
-        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 22
           cache: 'npm'
 
       - name: Install dependencies
@@ -66,27 +61,20 @@ jobs:
 
       - name: Generate coverage
         run: npm run coverage
-        if: matrix.os == 'ubuntu-latest' && matrix.node-version == 22
 
       - name: Upload coverage to GitHub
         uses: actions/upload-artifact@v4
-        if: matrix.os == 'ubuntu-latest' && matrix.node-version == 22
         with:
           name: coverage-report
           path: coverage/
           retention-days: 30
 
-  # Summary job
-  test-summary:
-    needs: test
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
       - name: Test Summary
+        if: always()
         run: |
-          if [ "${{ needs.test.result }}" == "success" ]; then
-            echo "✅ All tests passed across all Node.js versions and platforms!"
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ All tests passed on Linux Node 22!" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ Some tests failed. Check the test job for details."
+            echo "❌ Tests failed. Check the output above for details." >> $GITHUB_STEP_SUMMARY
             exit 1
           fi

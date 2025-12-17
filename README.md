@@ -44,7 +44,7 @@
 - **Automated releases** with release-please (semantic versioning)
 - **Automated dependency updates** with Renovate
 - **Auto-merge** for safe dependency patches
-- **Matrix testing** across Node 18, 20, 22 on Ubuntu, macOS, Windows
+- **Automated testing** on Linux Node 22
 - **Auto-labeling** for PRs based on changed files
 
 ### 📚 Comprehensive Documentation
@@ -275,7 +275,7 @@ See [SECURITY.md](SECURITY.md) for vulnerability reporting.
 - **Vitest** for fast unit testing
 - **@fast-check** for property-based testing (fuzz testing)
 - **80% coverage** threshold enforced
-- **Matrix testing** across Node versions and platforms
+- **Automated CI testing** on Linux Node 22
 
 **Run tests:**
 ```bash
