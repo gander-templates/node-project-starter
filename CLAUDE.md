@@ -70,8 +70,7 @@ node-project-starter/
 │   │   └── branch-protection.md # Branch protection setup guide
 │   └── api/                    # API documentation
 ├── src/
-│   ├── index.ts                # Main entry point
-│   └── lib/                    # Library code
+│   └── index.ts                # Main entry point and library code
 ├── tests/
 │   └── index.test.ts           # Vitest tests
 ├── biome.json                  # BiomeJS configuration
@@ -450,7 +449,7 @@ lefthook install  # Reinstall Git hooks
 ### Code Organization
 
 1. **One feature per file** when possible
-2. **Group related functionality** in subdirectories
+2. **Keep src/ flat** - all source files directly in src/
 3. **Export public API** through index.ts
 4. **Keep tests near code** (mirror structure)
 

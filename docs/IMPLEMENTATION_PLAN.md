@@ -38,7 +38,6 @@ This document outlines the complete implementation plan for the Node Project Sta
   docs/deployment/
   docs/api/
   src/
-  src/lib/
   tests/
   ```
 - [ ] Create empty placeholder files for each configuration file
@@ -721,15 +720,11 @@ This document outlines the complete implementation plan for the Node Project Sta
 
 **Tasks:**
 - [ ] Create src/index.ts:
-  - Example exported function
+  - Example exported functions
   - JSDoc documentation
   - Type-safe implementation
   - Error handling
-
-- [ ] Create src/lib/example.ts:
-  - Example utility function
-  - Proper exports
-  - Documentation
+  - All library code in single file (or multiple files directly in src/)
 
 **Deliverables:**
 - Working sample library code
@@ -748,11 +743,8 @@ This document outlines the complete implementation plan for the Node Project Sta
   - Success case tests
   - Error case tests
   - Edge case tests
-  - Coverage ≥80%
-
-- [ ] Create tests/lib/example.test.ts:
-  - Utility function tests
   - Property-based tests with @fast-check
+  - Coverage ≥80%
 
 **Deliverables:**
 - Working test suite with ≥80% coverage
