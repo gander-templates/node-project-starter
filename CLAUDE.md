@@ -71,7 +71,6 @@ node-project-starter/
 │   │   ├── security.md         # Security practices & verification
 │   │   └── branch-protection.md # Branch protection setup guide
 │   ├── api/                    # API documentation
-│   ├── BUNDLER_CHOICE.md       # tsdown vs pkgroll guide
 │   └── IMPLEMENTATION_PLAN.md  # Complete implementation plan
 ├── src/
 │   └── index.ts                # Main entry point and library code
@@ -87,7 +86,7 @@ node-project-starter/
 ├── .npmrc                      # NPM configuration (provenance enabled)
 ├── renovate.json               # Renovate dependency updates
 ├── release-please-config.json  # Release automation config
-├── README.md                   # Project documentation with badges
+├── README.md                   # Bundler configuration guide (cleanup after init)
 ├── LICENSE                     # MIT license
 ├── CHANGELOG.md                # Auto-generated changelog
 ├── CONTRIBUTING.md             # Contribution guidelines
@@ -128,45 +127,19 @@ node-project-starter/
 
 ### Build Configuration
 
-**Option 1: tsdown (Recommended)**
-- Rust-based bundler (successor to tsup)
-- ~2x faster bundling than tsup
-- ~8x faster .d.ts generation
-- Auto-reads target from `engines.node`
-- Supports Rolldown/Rollup/unplugin plugins
-- Vue/React/Solid/Svelte support
-- Config: `tsdown.config.ts`
+**Template includes EVERYTHING** - both bundlers, ESM + CJS support:
+- **tsdown** (default): `build:tsdown` script + `tsdown.config.ts` config
+- **pkgroll** (alternative): `build:pkgroll` script (zero-config)
+- **ESM + CJS**: Full dual-format support pre-configured
+- **publint**: Auto-validates before npm publish
 
-**Option 2: pkgroll (Alternative)**
-- Zero-config approach (no config file)
-- All configuration via `package.json`
-- Best-in-class tree-shaking (Rollup)
-- Cleanest CommonJS output
-- Auto-maps `./dist/` to `./src/`
-- Config: None (package.json only)
+**Simplify after init** - Remove what you don't need:
+- Keep only tsdown: `npm uninstall pkgroll` + remove `build:pkgroll` script
+- Keep only pkgroll: `rm tsdown.config.ts` + `npm uninstall tsdown`
+- ESM-only: Remove `"require"` from exports + `"cjs"` from tsdown config
+- Keep both: Compare build outputs or migrate gradually
 
-**publint (Always Included)**
-- Validates package configuration
-- Checks `exports` field correctness
-- Detects ESM/CJS format issues
-- Ensures TypeScript types exported properly
-- Catches publishing mistakes before npm publish
-
-**Choosing a Bundler:**
-See `docs/BUNDLER_CHOICE.md` for detailed comparison and migration guide.
-- **tsdown (DEFAULT):** Pre-configured in template with `tsdown.config.ts`
-  - Keep the config file as-is to use tsdown
-  - Fastest builds, plugin support, framework compatibility
-- **pkgroll (ALTERNATIVE):** Zero-config option
-  - Delete `tsdown.config.ts` if switching to pkgroll
-  - Replace `tsdown` with `pkgroll` in package.json devDependencies
-  - Configure everything via package.json exports field
-
-**CJS Support (Optional):**
-By default, the template generates **ESM only**. To add CommonJS:
-- **tsdown:** Add `"cjs"` to `format` array in tsdown.config.ts
-- **pkgroll:** Add `"require"` condition to exports in package.json
-- Both: publint will validate the configuration
+**See `README.md`** for detailed removal instructions and recommendations
 
 ### Release Please (release-please-config.json)
 - Conventional commits parsing
@@ -443,8 +416,10 @@ The project uses `.claude/settings.json` with the following hooks:
 
 ```json
 {
-  "dev": "TypeScript watch mode for development",
-  "build": "Build library with tsdown or pkgroll",
+  "dev": "TypeScript watch mode (tsdown by default)",
+  "build": "Build with default bundler (tsdown)",
+  "build:tsdown": "Build with tsdown (fast, plugins, frameworks)",
+  "build:pkgroll": "Build with pkgroll (zero-config, best tree-shaking)",
   "test": "Run Vitest tests",
   "test:watch": "Run tests in watch mode",
   "test:ui": "Interactive test UI",
@@ -457,7 +432,13 @@ The project uses `.claude/settings.json` with the following hooks:
 }
 ```
 
-**Note:** `prepublishOnly` automatically runs build and validates package before publishing to npm.
+**Build scripts:**
+- `build:tsdown` - Build with tsdown (default, faster)
+- `build:pkgroll` - Build with pkgroll (alternative, best tree-shaking)
+- `build` - Runs `build:tsdown` by default
+- **Simplify:** Remove unused bundler script after choosing (see `README.md`)
+
+**Note:** `prepublishOnly` automatically runs build and validates with publint before npm publish.
 
 ## Troubleshooting
 
@@ -532,7 +513,7 @@ lefthook install  # Reinstall Git hooks
 - **tsdown**: https://tsdown.dev/
 - **pkgroll**: https://github.com/privatenumber/pkgroll
 - **publint**: https://publint.dev/
-- **Bundler Comparison**: See docs/BUNDLER_CHOICE.md
+- **Bundler Configuration**: See README.md (full setup with cleanup instructions)
 - **Lefthook**: https://github.com/evilmartians/lefthook
 
 ### Security & Supply Chain
