@@ -1,0 +1,78 @@
+name: Actionlint
+
+on:
+  push:
+    paths:
+      - '.github/workflows/**'
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Detect workflow changes
+  changes:
+    runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch'
+    permissions:
+      pull-requests: read
+    outputs:
+      workflows: ${{ steps.filter.outputs.workflows }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            workflows:
+              - '.github/workflows/**'
+
+  # Validate workflow syntax
+  actionlint:
+    needs: changes
+    if: |
+      always() &&
+      (needs.changes.result == 'skipped' || needs.changes.outputs.workflows == 'true')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Run actionlint
+        id: actionlint
+        uses: raven-actions/actionlint@v2
+        with:
+          matcher: true
+          cache: true
+          fail-on-error: true
+
+      - name: Actionlint Summary
+        if: always() && steps.actionlint.outputs.exit-code != '0'
+        run: |
+          {
+            echo "### ❌ Actionlint Results"
+            echo ""
+            echo "**Version:** ${{ steps.actionlint.outputs.version-semver }}"
+            echo "**Release:** ${{ steps.actionlint.outputs.version-tag }}"
+            echo "**Exit Code:** ${{ steps.actionlint.outputs.exit-code }}"
+            echo "**Exit Message:** ${{ steps.actionlint.outputs.exit-message }}"
+            echo "**Total Errors:** ${{ steps.actionlint.outputs.total-errors }}"
+            echo "**Files Checked:** ${{ steps.actionlint.outputs.total-files }}"
+            echo "**Cache Hit:** ${{ steps.actionlint.outputs.cache-hit }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+      - name: Success Summary
+        if: steps.actionlint.outputs.exit-code == '0'
+        run: |
+          {
+            echo "### ✅ Actionlint Passed"
+            echo ""
+            echo "All workflow files are valid!"
+            echo ""
+            echo "**Files Checked:** ${{ steps.actionlint.outputs.total-files }}"
+            echo "**Version:** ${{ steps.actionlint.outputs.version-semver }}"
+          } >> "$GITHUB_STEP_SUMMARY"

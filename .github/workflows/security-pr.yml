@@ -1,0 +1,127 @@
+name: Security PR Checks
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: read
+
+jobs:
+  # Detect if security-relevant files changed
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      security: ${{ steps.filter.outputs.security }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            security:
+              - 'package.json'
+              - 'package-lock.json'
+              - 'src/**'
+              - '.github/workflows/**'
+
+  # NPM audit for vulnerabilities
+  npm-audit:
+    needs: changes
+    # Skip on template repository (no package-lock.json)
+    if: |
+      github.repository != 'gander-templates/node-project-starter' &&
+      needs.changes.outputs.security == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit (moderate and high)
+        run: npm audit --audit-level=moderate
+        continue-on-error: false
+
+  # Generate SBOM (Software Bill of Materials)
+  sbom:
+    needs: changes
+    # Skip on template repository (no package-lock.json)
+    if: |
+      github.repository != 'gander-templates/node-project-starter' &&
+      needs.changes.outputs.security == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate SBOM
+        run: npx @cyclonedx/cyclonedx-npm --output-file sbom.json
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-pr
+          path: sbom.json
+          retention-days: 90
+
+  # License compliance check
+  license-check:
+    needs: changes
+    # Skip on template repository (no package-lock.json)
+    if: |
+      github.repository != 'gander-templates/node-project-starter' &&
+      needs.changes.outputs.security == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check licenses
+        run: npx license-checker --summary
+        continue-on-error: true
+
+  # Summary
+  security-summary:
+    needs: [npm-audit, sbom, license-check]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Security Summary
+        run: |
+          {
+            echo "## Security PR Check Summary"
+            echo ""
+            echo "- NPM Audit: ${{ needs.npm-audit.result }}"
+            echo "- SBOM Generation: ${{ needs.sbom.result }}"
+            echo "- License Check: ${{ needs.license-check.result }}"
+          } >> "$GITHUB_STEP_SUMMARY"
