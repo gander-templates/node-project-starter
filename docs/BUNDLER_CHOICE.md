@@ -1,6 +1,20 @@
 # Bundler Choice Guide - tsdown vs pkgroll
 
-This template supports two modern library bundlers. You must choose ONE during project setup.
+**DEFAULT:** This template uses **tsdown** with pre-configured `tsdown.config.ts`.
+
+You can optionally **switch to pkgroll** by deleting the config file and updating package.json.
+
+## What's Included by Default
+
+- ✅ `tsdown.config.ts` already created
+- ✅ `tsdown` in devDependencies
+- ✅ `publint` in devDependencies
+- ✅ ESM-only build (no CJS by default)
+- ✅ Build scripts configured
+
+**To use the default:** No action needed - just run `npm run build`
+
+**To switch to pkgroll:** Follow "Migration" section below
 
 ## Quick Decision Matrix
 
@@ -14,33 +28,42 @@ This template supports two modern library bundlers. You must choose ONE during p
 | **Plugins** | ✅ Rolldown/Rollup/unplugin | Limited |
 | **UMD format** | ✅ Supported | Not supported |
 
-## Option 1: tsdown (Recommended)
+## Option 1: tsdown (DEFAULT in template)
+
+**tsdown is pre-configured - you don't need to do anything.**
+
+The template includes `tsdown.config.ts` with sensible defaults.
 
 **Use tsdown if:**
-- You want the fastest possible builds
+- You want the fastest possible builds (it's already set up!)
 - Your library includes framework components (Vue/React/Solid/Svelte)
 - You need UMD format for CDN usage
 - You want plugin ecosystem support
-- You're migrating from tsup (nearly 100% compatible)
+- You're coming from tsup (nearly 100% compatible)
 
-**Installation:**
-
-```bash
-npm install -D tsdown
-```
-
-**Configuration:** Create `tsdown.config.ts`:
+**Configuration:** Template includes `tsdown.config.ts`:
 
 ```typescript
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
   entry: ["src/index.ts"],
-  format: ["esm", "cjs"],
+  format: ["esm"], // Add "cjs" if you need CommonJS
   dts: true,
   clean: true,
   sourcemap: true,
   minify: false, // Enable for production libraries
+});
+```
+
+**To add CommonJS support:**
+```typescript
+export default defineConfig({
+  entry: ["src/index.ts"],
+  format: ["esm", "cjs"], // ← Add "cjs" here
+  dts: true,
+  clean: true,
+  sourcemap: true,
 });
 ```
 
@@ -71,7 +94,13 @@ export default defineConfig({
 });
 ```
 
-## Option 2: pkgroll (Zero-Config Alternative)
+## Option 2: pkgroll (Alternative - Zero Config)
+
+**To switch from tsdown to pkgroll:**
+
+1. Delete `tsdown.config.ts`
+2. Update package.json devDependencies
+3. Configure via package.json only
 
 **Use pkgroll if:**
 - You hate configuration files
@@ -80,19 +109,45 @@ export default defineConfig({
 - Your library is utilities/helpers (not UI components)
 - You prefer configuration via package.json only
 
-**Installation:**
+**Migration steps:**
 
 ```bash
-npm install -D pkgroll
+# 1. Remove tsdown config
+rm tsdown.config.ts
+
+# 2. Update package.json manually:
+# Replace "tsdown" with "pkgroll" in devDependencies
 ```
 
 **Configuration:** None! Configure via `package.json` only:
 
+**ESM only (recommended):**
 ```json
 {
   "name": "your-library",
   "version": "1.0.0",
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "dev": "pkgroll --watch",
+    "build": "pkgroll",
+    "prepublishOnly": "npm run build && publint --strict"
+  }
+}
+```
+
+**With optional CJS:**
+```json
+{
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -102,13 +157,7 @@ npm install -D pkgroll
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "files": ["dist"],
-  "scripts": {
-    "dev": "pkgroll --watch",
-    "build": "pkgroll",
-    "prepublishOnly": "npm run build && publint --strict"
-  }
+  "types": "./dist/index.d.ts"
 }
 ```
 
@@ -149,23 +198,44 @@ npx publint --strict
 
 ## Migration Between Bundlers
 
-**tsdown → pkgroll:**
+### tsdown → pkgroll (switching from default):
 
-1. Remove `tsdown.config.ts`
-2. Move all configuration to `package.json` exports
-3. Update scripts to use `pkgroll`
-4. Test build output structure matches
+```bash
+# 1. Delete config file
+rm tsdown.config.ts
 
-**pkgroll → tsdown:**
+# 2. Update package.json devDependencies
+# Change: "tsdown": "latest" → "pkgroll": "latest"
 
-1. Create `tsdown.config.ts`
-2. Configure formats explicitly
-3. Update scripts to use `tsdown`
-4. Verify plugin compatibility if needed
+# 3. Update scripts
+# Change: "build": "tsdown" → "build": "pkgroll"
+
+# 4. Configure exports in package.json (see above)
+
+# 5. Test
+npm run build
+npx publint --strict
+```
+
+### pkgroll → tsdown (back to default):
+
+```bash
+# 1. Create tsdown.config.ts (see template example)
+
+# 2. Update package.json devDependencies
+# Change: "pkgroll": "latest" → "tsdown": "latest"
+
+# 3. Update scripts
+# Change: "build": "pkgroll" → "build": "tsdown"
+
+# 4. Test
+npm run build
+npx publint --strict
+```
 
 ## Common package.json Configuration
 
-Both bundlers require proper `package.json` configuration:
+**ESM only (template default):**
 
 ```json
 {
@@ -178,26 +248,47 @@ Both bundlers require proper `package.json` configuration:
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     }
   },
-  "main": "./dist/index.cjs",
+  "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": ["dist"],
   "scripts": {
-    "dev": "tsdown --watch",     // or "pkgroll --watch"
-    "build": "tsdown",            // or "pkgroll"
+    "dev": "tsdown --watch",
+    "build": "tsdown",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build && publint --strict"
   },
   "devDependencies": {
-    "tsdown": "^0.x.x",           // or "pkgroll": "^0.x.x"
+    "tsdown": "^0.x.x",
     "publint": "^0.x.x",
     "typescript": "^5.x.x"
   }
 }
+```
+
+**With optional CJS (if needed):**
+
+```json
+{
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"  // ← Add for CJS
+    }
+  },
+  "main": "./dist/index.cjs",  // ← Change to .cjs
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts"
+}
+```
+
+**And in tsdown.config.ts:**
+```typescript
+format: ["esm", "cjs"]  // ← Add "cjs"
 ```
 
 ## Troubleshooting
@@ -281,22 +372,45 @@ Based on bundler-benchmark repository:
 - ✅ Works with standard Rollup plugins (manual integration)
 - ❌ No built-in framework support
 
+## What's Pre-configured in Template
+
+**The template comes with tsdown already set up:**
+
+1. ✅ `tsdown.config.ts` exists in project root
+2. ✅ `tsdown` in package.json devDependencies
+3. ✅ Scripts configured (`build`, `dev`)
+4. ✅ ESM-only by default (add CJS if needed)
+5. ✅ `publint` pre-configured
+
+**To keep tsdown (recommended):**
+- No action needed
+- Just run `npm install && npm run build`
+- Customize `tsdown.config.ts` if desired
+
+**To switch to pkgroll:**
+1. Delete `tsdown.config.ts`
+2. Replace `tsdown` with `pkgroll` in package.json
+3. Update scripts to use `pkgroll`
+4. Configure via package.json exports
+
 ## Final Recommendation
 
-**For this template (Node Project Starter):**
+**Use tsdown (default)** unless you have a strong preference for zero-config.
 
-- **Default choice:** tsdown
-  - Fastest performance
-  - Future-proof (official Rolldown project)
-  - Framework support if needed later
-  - Easier to customize
+**Reasons to keep tsdown:**
+- Already configured in template
+- Fastest builds (~2x faster than alternatives)
+- Plugin ecosystem support
+- Framework compatibility (Vue/React/etc.)
+- Future-proof (official Rolldown project)
 
-- **Alternative:** pkgroll
-  - Choose if you strongly prefer zero-config
-  - Best for simple utility libraries
-  - Excellent for minimalists
+**Reasons to switch to pkgroll:**
+- You dislike config files
+- You want best-in-class tree-shaking
+- You need cleanest CommonJS output
+- Your library is simple utilities
 
-**Both are production-ready.** Choose based on your preference for configuration style.
+**Both are production-ready.** The default (tsdown) is optimized for most use cases.
 
 ---
 

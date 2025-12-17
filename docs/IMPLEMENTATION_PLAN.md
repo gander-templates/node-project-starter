@@ -94,6 +94,21 @@ This document outlines the complete implementation plan for the Node Project Sta
   **Note:** Replace `"tsdown": "latest"` with `"pkgroll": "latest"` if choosing pkgroll
 
 - [ ] Configure exports (critical for publint validation):
+
+  **ESM only (DEFAULT):**
+  ```json
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts"
+  ```
+
+  **With optional CJS:**
   ```json
   "exports": {
     ".": {
@@ -106,7 +121,7 @@ This document outlines the complete implementation plan for the Node Project Sta
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts"
   ```
-  **Note:** Adjust paths based on bundler output structure
+  **Note:** Add CJS only if you need CommonJS support. Most modern projects use ESM only.
 
 - [ ] Set Node.js engine requirement: `"node": ">=20"`
 
@@ -210,43 +225,50 @@ This document outlines the complete implementation plan for the Node Project Sta
 
 ### 2.4 Build Configuration
 
-**Objective:** Configure bundler (tsdown or pkgroll) for library building.
+**Objective:** Configure bundler for library building.
 
-**IMPORTANT:** Choose ONE bundler option (see `docs/BUNDLER_CHOICE.md` for detailed comparison):
+**DEFAULT:** Template includes **tsdown** with `tsdown.config.ts` pre-created.
 
-**Option 1: tsdown (Recommended)**
+**To use tsdown (DEFAULT - no action needed):**
 
 **Tasks:**
-- [ ] Install tsdown: `npm install -D tsdown`
-- [ ] Create tsdown.config.ts with:
+- [ ] Keep existing tsdown.config.ts (already created in template)
+- [ ] Review configuration:
   - Entry point: `src/index.ts`
-  - Format: ESM (and optionally CJS)
+  - Format: `["esm"]` (default, add `"cjs"` if needed)
   - DTS generation enabled
   - Source maps enabled
   - Clean dist before build
   - Target from `engines.node` in package.json
-  - Minification options
+- [ ] Customize if needed (minification, plugins, etc.)
 
-**Option 2: pkgroll (Alternative - Zero Config)**
+**To switch to pkgroll (ALTERNATIVE):**
 
 **Tasks:**
-- [ ] Install pkgroll: `npm install -D pkgroll`
+- [ ] Delete tsdown.config.ts file
+- [ ] Replace in package.json devDependencies: `"tsdown"` → `"pkgroll"`
 - [ ] Configure package.json with:
   - `exports` field mapping `./dist/*` to entry points
   - `main`, `module`, `types` fields pointing to dist
   - `files` field including dist directory
-  - No config file needed - pkgroll reads everything from package.json
+  - No config file - pkgroll reads everything from package.json
 
-**After choosing bundler:**
-- [ ] Install publint: `npm install -D publint`
-- [ ] Add `prepublishOnly` script: `npm run build && publint --strict`
+**publint validation (ALWAYS - already included):**
+- [ ] publint is pre-installed in devDependencies
+- [ ] `prepublishOnly` script already configured
 - [ ] Test build: `npm run build`
-- [ ] Validate with publint: `npx publint --strict`
+- [ ] Validate: `npx publint --strict`
+
+**Optional: Add CommonJS support**
+- [ ] tsdown: Add `"cjs"` to format array: `format: ["esm", "cjs"]`
+- [ ] pkgroll: Add `"require": "./dist/index.cjs"` to exports
+- [ ] Adjust package.json `main` field to point to .cjs file
+- [ ] Validate with publint after changes
 
 **Deliverables:**
-- Bundler configured (tsdown.config.ts OR package.json for pkgroll)
-- publint validation setup
-- Working build process
+- Working bundler (tsdown by default, or pkgroll if switched)
+- publint validation passing
+- ESM output (+ optional CJS)
 
 ---
 

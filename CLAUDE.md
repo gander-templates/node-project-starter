@@ -154,8 +154,19 @@ node-project-starter/
 
 **Choosing a Bundler:**
 See `docs/BUNDLER_CHOICE.md` for detailed comparison and migration guide.
-- **tsdown:** Recommended for most projects (fastest, plugin support, framework compatibility)
-- **pkgroll:** Alternative for zero-config purists (best tree-shaking, cleanest CJS)
+- **tsdown (DEFAULT):** Pre-configured in template with `tsdown.config.ts`
+  - Keep the config file as-is to use tsdown
+  - Fastest builds, plugin support, framework compatibility
+- **pkgroll (ALTERNATIVE):** Zero-config option
+  - Delete `tsdown.config.ts` if switching to pkgroll
+  - Replace `tsdown` with `pkgroll` in package.json devDependencies
+  - Configure everything via package.json exports field
+
+**CJS Support (Optional):**
+By default, the template generates **ESM only**. To add CommonJS:
+- **tsdown:** Add `"cjs"` to `format` array in tsdown.config.ts
+- **pkgroll:** Add `"require"` condition to exports in package.json
+- Both: publint will validate the configuration
 
 ### Release Please (release-please-config.json)
 - Conventional commits parsing
