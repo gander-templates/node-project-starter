@@ -1,0 +1,62 @@
+name: Actionlint
+
+on:
+  push:
+    paths:
+      - '.github/workflows/**'
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Detect workflow changes
+  changes:
+    runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch'
+    permissions:
+      pull-requests: read
+    outputs:
+      workflows: ${{ steps.filter.outputs.workflows }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            workflows:
+              - '.github/workflows/**'
+
+  # Validate workflow syntax
+  actionlint:
+    needs: changes
+    if: |
+      always() &&
+      (needs.changes.result == 'skipped' || needs.changes.outputs.workflows == 'true')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run actionlint
+        uses: reva2/actions-toolkit/actionlint@v1
+        with:
+          matcher: true
+          cache: true
+          fail-on-error: true
+
+      - name: Actionlint Summary
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "## ✅ All GitHub Actions workflows are valid!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "No syntax errors found in workflow files." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ❌ Workflow validation failed!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Please check the actionlint output above for details." >> $GITHUB_STEP_SUMMARY
+          fi

@@ -1,0 +1,126 @@
+name: Fuzz Testing
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run weekly on Mondays at 2:00 AM UTC
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+    inputs:
+      num_runs:
+        description: 'Number of fuzz test runs'
+        required: false
+        default: '1000'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  # Detect changes
+  changes:
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
+    permissions:
+      pull-requests: read
+    outputs:
+      src: ${{ steps.filter.outputs.src }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            src:
+              - 'src/**'
+              - 'tests/**'
+              - 'package.json'
+
+  # Quick fuzz for PRs
+  fuzz-pr:
+    needs: changes
+    if: |
+      github.event_name == 'pull_request' &&
+      needs.changes.outputs.src == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run quick fuzz tests (100 runs)
+        run: npm test -- --run --reporter=verbose
+        env:
+          FUZZ_RUNS: 100
+        timeout-minutes: 5
+
+      - name: Fuzz Summary
+        if: always()
+        run: |
+          echo "## 🔍 Quick Fuzz Test Results (PR)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Runs:** 100" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+
+  # Extended fuzz for scheduled runs
+  fuzz-extended:
+    if: |
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run extended fuzz tests
+        run: npm test -- --run --reporter=verbose
+        env:
+          FUZZ_RUNS: ${{ github.event.inputs.num_runs || '5000' }}
+        timeout-minutes: 30
+
+      - name: Generate fuzz report
+        if: always()
+        run: |
+          echo "# Fuzz Test Report" > fuzz-report.md
+          echo "" >> fuzz-report.md
+          echo "**Date:** $(date)" >> fuzz-report.md
+          echo "**Runs:** ${{ github.event.inputs.num_runs || '5000' }}" >> fuzz-report.md
+          echo "**Status:** ${{ job.status }}" >> fuzz-report.md
+
+      - name: Upload fuzz report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-report-${{ github.run_number }}
+          path: fuzz-report.md
+          retention-days: 30
+
+      - name: Fuzz Summary
+        if: always()
+        run: |
+          echo "## 🔍 Extended Fuzz Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Runs:** ${{ github.event.inputs.num_runs || '5000' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Duration:** ${{ job.duration }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY

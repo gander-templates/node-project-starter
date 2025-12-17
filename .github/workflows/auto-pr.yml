@@ -1,0 +1,81 @@
+name: Auto PR for Claude Branches
+
+on:
+  push:
+    branches:
+      - 'claude/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract branch metadata
+        id: metadata
+        run: |
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+          # Extract session ID from branch name (e.g., claude/start-implementation-H60OG)
+          SESSION_ID=$(echo "$BRANCH_NAME" | sed 's/.*-//')
+          echo "session_id=$SESSION_ID" >> $GITHUB_OUTPUT
+
+      - name: Check if PR exists
+        id: check-pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_EXISTS=$(gh pr list --head "${{ steps.metadata.outputs.branch }}" --json number --jq length)
+          echo "exists=$PR_EXISTS" >> $GITHUB_OUTPUT
+
+      - name: Get commit messages
+        if: steps.check-pr.outputs.exists == '0'
+        id: commits
+        run: |
+          # Get all commits on this branch that aren't on main
+          COMMITS=$(git log origin/main..HEAD --pretty=format:"- %s" | head -n 20)
+
+          # Create PR body
+          {
+            echo "body<<EOF"
+            echo "## Changes"
+            echo ""
+            echo "$COMMITS"
+            echo ""
+            echo "---"
+            echo "*This PR was automatically created from branch \`${{ steps.metadata.outputs.branch }}\`*"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Create Pull Request
+        if: steps.check-pr.outputs.exists == '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --title "Claude implementation: ${{ steps.metadata.outputs.session_id }}" \
+            --body "${{ steps.commits.outputs.body }}" \
+            --base main \
+            --head "${{ steps.metadata.outputs.branch }}" \
+            --label "claude,automated"
+
+      - name: Summary
+        run: |
+          if [ "${{ steps.check-pr.outputs.exists }}" == "0" ]; then
+            echo "## ✅ Pull Request Created!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "- **Branch:** \`${{ steps.metadata.outputs.branch }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Session:** ${{ steps.metadata.outputs.session_id }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ℹ️ Pull Request Already Exists" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "- **Branch:** \`${{ steps.metadata.outputs.branch }}\`" >> $GITHUB_STEP_SUMMARY
+          fi

@@ -1,0 +1,184 @@
+name: Security Main Branch
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Run daily at 02:00 UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  # Detect changes (skip for scheduled runs)
+  changes:
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'
+    permissions:
+      pull-requests: read
+    outputs:
+      security: ${{ steps.filter.outputs.security }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            security:
+              - 'package.json'
+              - 'package-lock.json'
+              - 'src/**'
+              - '.github/workflows/**'
+
+  # NPM audit (production only)
+  npm-audit:
+    needs: changes
+    if: |
+      always() &&
+      (needs.changes.result == 'skipped' || needs.changes.outputs.security == 'true')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --omit=dev
+
+      - name: Run npm audit
+        run: npm audit --production --audit-level=moderate
+        continue-on-error: false
+
+  # Generate SBOM
+  sbom:
+    needs: changes
+    if: |
+      always() &&
+      (needs.changes.result == 'skipped' || needs.changes.outputs.security == 'true')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate SBOM (CycloneDX)
+        run: npx @cyclonedx/cyclonedx-npm --output-file sbom.json
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-main
+          path: sbom.json
+          retention-days: 90
+
+  # CodeQL Analysis
+  codeql:
+    needs: changes
+    if: |
+      always() &&
+      (needs.changes.result == 'skipped' || needs.changes.outputs.security == 'true')
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"
+
+  # OpenSSF Scorecard
+  scorecard:
+    needs: changes
+    if: |
+      always() &&
+      (needs.changes.result == 'skipped' || needs.changes.outputs.security == 'true')
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Run OpenSSF Scorecard
+        uses: ossf/scorecard-action@v2
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: true
+
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
+
+  # License compliance
+  license-check:
+    needs: changes
+    if: |
+      always() &&
+      (needs.changes.result == 'skipped' || needs.changes.outputs.security == 'true')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check licenses
+        run: npx license-checker --summary
+
+  # Summary
+  security-summary:
+    needs: [npm-audit, sbom, codeql, scorecard, license-check]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Security Summary
+        run: |
+          echo "## Security Main Branch Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- NPM Audit: ${{ needs.npm-audit.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- SBOM Generation: ${{ needs.sbom.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- CodeQL Analysis: ${{ needs.codeql.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- OpenSSF Scorecard: ${{ needs.scorecard.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- License Check: ${{ needs.license-check.result }}" >> $GITHUB_STEP_SUMMARY
