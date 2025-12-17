@@ -1,18 +1,20 @@
-# Bundler Configuration Guide
+# README
+
+## Bundler Configuration Guide
 
 **Template includes:** Both `tsdown` and `pkgroll` pre-configured with ESM + CJS support.
 
 **Choose your setup** by removing what you don't need.
 
-## What's Included (Full Config)
+### What's Included (Full Config)
 
 ```json
 {
   "scripts": {
     "build:tsdown": "tsdown",
     "build:pkgroll": "pkgroll",
-    "build": "npm run build:tsdown",
-    "dev": "tsdown --watch"
+    "dev:tsdown": "tsdown --watch",
+    "dev:pkgroll": "pkgroll --watch"
   },
   "devDependencies": {
     "tsdown": "latest",
@@ -33,54 +35,43 @@
 - `tsdown.config.ts` - tsdown configuration
 - `package.json` - exports configured for both bundlers
 
-## Bundler Comparison
+### Simplify Your Setup
 
-| Feature | tsdown | pkgroll |
-|---------|--------|---------|
-| **Speed** | ~2x faster | Good |
-| **Config** | tsdown.config.ts | package.json only |
-| **Frameworks** | Vue/React/Svelte | Manual |
-| **Plugins** | Rolldown/Rollup/unplugin | Limited |
-| **Tree-shaking** | Excellent | Best |
-| **CJS output** | Good | Cleanest |
-
-## Simplify Your Setup
-
-### Keep Only tsdown (Recommended)
+#### Keep Only tsdown (Recommended)
 
 **Remove:**
 1. Delete `"pkgroll"` from `devDependencies`
-2. Delete `"build:pkgroll"` script
-3. Done! Keep `build:tsdown` or rename to `build`
+2. Delete `"build:pkgroll"` and `"dev:pkgroll"` scripts
+3. Rename `"build:tsdown"` to `build`
+4. Rename `"dev:tsdown"` to `dev`
 
 ```bash
 npm uninstall pkgroll
 ```
 
-### Keep Only pkgroll
+#### Keep Only pkgroll
 
 **Remove:**
 1. Delete `tsdown.config.ts` file
 2. Delete `"tsdown"` from `devDependencies`
-3. Delete `"build:tsdown"` script
-4. Change `"dev"` to use pkgroll: `"dev": "pkgroll --watch"`
-5. Rename `build:pkgroll` to `build`
+3. Delete `"build:tsdown"` and `"dev:tsdown"` scripts
+4. Rename `build:pkgroll` to `build`
+5. Rename `dev:pkgroll` to `dev`
 
 ```bash
 rm tsdown.config.ts
 npm uninstall tsdown
 ```
 
-### Keep Both (Advanced)
+#### Keep Both (Advanced)
 
 **Use case:** Compare build outputs or migrate gradually.
 
 **Keep everything as-is.** Use:
 - `npm run build:tsdown` - Build with tsdown
 - `npm run build:pkgroll` - Build with pkgroll
-- `npm run build` - Uses default (tsdown)
 
-### Remove CommonJS Support
+#### Remove CommonJS Support
 
 **If you only need ESM:**
 
@@ -107,7 +98,7 @@ export default defineConfig({
 
 **Result:** Smaller package, fewer files, ESM-only.
 
-### Remove ESM Support (CJS Only)
+#### Remove ESM Support (CJS Only)
 
 **If you only need CommonJS:**
 
@@ -134,9 +125,9 @@ export default defineConfig({
 });
 ```
 
-## Full Configuration Reference
+### Full Configuration Reference
 
-### tsdown.config.ts (Full)
+#### tsdown.config.ts (Full)
 
 ```typescript
 import { defineConfig } from "tsdown";
@@ -153,7 +144,7 @@ export default defineConfig({
 
 **Remove file entirely if using pkgroll only.**
 
-### package.json exports (Full)
+#### package.json exports (Full)
 
 ```json
 {
@@ -204,33 +195,7 @@ npx publint --strict  # Run manually
 }
 ```
 
-## Quick Start Checklist
-
-After initializing template:
-
-1. **Choose bundler:**
-   - [ ] Keep tsdown (faster, more features)
-   - [ ] Switch to pkgroll (zero-config)
-   - [ ] Keep both (for comparison)
-
-2. **Choose module format:**
-   - [ ] ESM + CJS (maximum compatibility)
-   - [ ] ESM only (modern, smaller)
-   - [ ] CJS only (legacy support)
-
-3. **Clean up:**
-   - [ ] Remove unused bundler from package.json
-   - [ ] Remove unused scripts
-   - [ ] Remove unused config files
-   - [ ] Update exports field
-
-4. **Test:**
-   ```bash
-   npm run build
-   npx publint --strict
-   ```
-
-## Recommendations
+### Recommendations
 
 **Most projects:**
 - ✅ Keep **tsdown only**
