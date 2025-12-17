@@ -396,7 +396,8 @@ Nice-to-have features for long-term consideration:
 - BiomeJS for linting and formatting (ultra-fast alternative to ESLint + Prettier)
 - Lefthook for Git hooks (lightweight alternative to Husky)
 - Vitest for unit testing with coverage enforcement
-- tsup for library bundling (zero-config, esbuild-based)
+- tsdown for library bundling (Rust-based, successor to tsup) OR pkgroll (zero-config alternative)
+- publint for package validation before publishing
 
 **CI/CD:**
 - GitHub Actions for all automation
@@ -434,7 +435,7 @@ Nice-to-have features for long-term consideration:
 ├── lefthook.yml                # Git hooks configuration
 ├── package.json                # Package manifest
 ├── tsconfig.json               # TypeScript configuration
-├── tsup.config.ts              # Build configuration
+├── tsdown.config.ts            # Build configuration (tsdown only, pkgroll has no config)
 ├── vitest.config.ts            # Test configuration
 ├── .npmrc                      # NPM configuration
 ├── renovate.json               # Renovate configuration
