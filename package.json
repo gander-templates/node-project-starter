@@ -1,6 +1,6 @@
 {
   "name": "@gander-templates/node-project-starter",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "Production-ready GitHub template for Node.js library/package projects with enterprise-grade CI/CD pipelines, security scanning, and automated release management",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -20,7 +20,7 @@
     "CHANGELOG.md"
   ],
   "engines": {
-    "node": ">=22"
+    "node": ">=20"
   },
   "scripts": {
     "dev": "tsdown --watch",
