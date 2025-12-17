@@ -128,45 +128,14 @@ node-project-starter/
 
 ### Build Configuration
 
-**Option 1: tsdown (Recommended)**
-- Rust-based bundler (successor to tsup)
-- ~2x faster bundling than tsup
-- ~8x faster .d.ts generation
-- Auto-reads target from `engines.node`
-- Supports Rolldown/Rollup/unplugin plugins
-- Vue/React/Solid/Svelte support
-- Config: `tsdown.config.ts`
+**Bundler:** Template uses **tsdown** (default) with `tsdown.config.ts` pre-configured.
+- **No setup needed** - just run `npm run build`
+- ~2x faster builds, plugin support, framework components (Vue/React/Svelte)
+- **Alternative:** Switch to pkgroll (zero-config) - see `docs/BUNDLER_CHOICE.md`
 
-**Option 2: pkgroll (Alternative)**
-- Zero-config approach (no config file)
-- All configuration via `package.json`
-- Best-in-class tree-shaking (Rollup)
-- Cleanest CommonJS output
-- Auto-maps `./dist/` to `./src/`
-- Config: None (package.json only)
+**publint:** Auto-validates package configuration before npm publish (catches exports/types errors)
 
-**publint (Always Included)**
-- Validates package configuration
-- Checks `exports` field correctness
-- Detects ESM/CJS format issues
-- Ensures TypeScript types exported properly
-- Catches publishing mistakes before npm publish
-
-**Choosing a Bundler:**
-See `docs/BUNDLER_CHOICE.md` for detailed comparison and migration guide.
-- **tsdown (DEFAULT):** Pre-configured in template with `tsdown.config.ts`
-  - Keep the config file as-is to use tsdown
-  - Fastest builds, plugin support, framework compatibility
-- **pkgroll (ALTERNATIVE):** Zero-config option
-  - Delete `tsdown.config.ts` if switching to pkgroll
-  - Replace `tsdown` with `pkgroll` in package.json devDependencies
-  - Configure everything via package.json exports field
-
-**CJS Support (Optional):**
-By default, the template generates **ESM only**. To add CommonJS:
-- **tsdown:** Add `"cjs"` to `format` array in tsdown.config.ts
-- **pkgroll:** Add `"require"` condition to exports in package.json
-- Both: publint will validate the configuration
+**Add CommonJS (optional):** Change `format: ["esm", "cjs"]` in tsdown.config.ts
 
 ### Release Please (release-please-config.json)
 - Conventional commits parsing
