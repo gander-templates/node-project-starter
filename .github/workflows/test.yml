@@ -37,7 +37,10 @@ jobs:
   # Test on Linux Node 22 only
   test:
     needs: changes
-    if: ${{ needs.changes.outputs.src == 'true' || github.event_name == 'workflow_dispatch' }}
+    # Skip on template repository (no package-lock.json)
+    if: |
+      github.repository != 'gander-templates/node-project-starter' &&
+      (needs.changes.outputs.src == 'true' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
 
     steps:

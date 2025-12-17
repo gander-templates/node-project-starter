@@ -32,7 +32,10 @@ jobs:
   # NPM audit for vulnerabilities
   npm-audit:
     needs: changes
-    if: ${{ needs.changes.outputs.security == 'true' }}
+    # Skip on template repository (no package-lock.json)
+    if: |
+      github.repository != 'gander-templates/node-project-starter' &&
+      needs.changes.outputs.security == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -54,7 +57,10 @@ jobs:
   # Generate SBOM (Software Bill of Materials)
   sbom:
     needs: changes
-    if: ${{ needs.changes.outputs.security == 'true' }}
+    # Skip on template repository (no package-lock.json)
+    if: |
+      github.repository != 'gander-templates/node-project-starter' &&
+      needs.changes.outputs.security == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -82,7 +88,10 @@ jobs:
   # License compliance check
   license-check:
     needs: changes
-    if: ${{ needs.changes.outputs.security == 'true' }}
+    # Skip on template repository (no package-lock.json)
+    if: |
+      github.repository != 'gander-templates/node-project-starter' &&
+      needs.changes.outputs.security == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
