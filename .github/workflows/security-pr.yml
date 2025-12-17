@@ -118,8 +118,10 @@ jobs:
     steps:
       - name: Security Summary
         run: |
-          echo "## Security PR Check Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- NPM Audit: ${{ needs.npm-audit.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- SBOM Generation: ${{ needs.sbom.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- License Check: ${{ needs.license-check.result }}" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Security PR Check Summary"
+            echo ""
+            echo "- NPM Audit: ${{ needs.npm-audit.result }}"
+            echo "- SBOM Generation: ${{ needs.sbom.result }}"
+            echo "- License Check: ${{ needs.license-check.result }}"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -22,11 +22,11 @@ jobs:
         id: metadata
         run: |
           BRANCH_NAME="${GITHUB_REF#refs/heads/}"
-          echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          echo "branch=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
 
           # Extract session ID from branch name (e.g., claude/start-implementation-H60OG)
-          SESSION_ID=$(echo "$BRANCH_NAME" | sed 's/.*-//')
-          echo "session_id=$SESSION_ID" >> $GITHUB_OUTPUT
+          SESSION_ID="${BRANCH_NAME##*-}"
+          echo "session_id=$SESSION_ID" >> "$GITHUB_OUTPUT"
 
       - name: Check if PR exists
         id: check-pr
@@ -34,7 +34,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PR_EXISTS=$(gh pr list --head "${{ steps.metadata.outputs.branch }}" --json number --jq length)
-          echo "exists=$PR_EXISTS" >> $GITHUB_OUTPUT
+          echo "exists=$PR_EXISTS" >> "$GITHUB_OUTPUT"
 
       - name: Get commit messages
         if: steps.check-pr.outputs.exists == '0'
@@ -53,7 +53,7 @@ jobs:
             echo "---"
             echo "*This PR was automatically created from branch \`${{ steps.metadata.outputs.branch }}\`*"
             echo "EOF"
-          } >> $GITHUB_OUTPUT
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create Pull Request
         if: steps.check-pr.outputs.exists == '0'
@@ -70,12 +70,16 @@ jobs:
       - name: Summary
         run: |
           if [ "${{ steps.check-pr.outputs.exists }}" == "0" ]; then
-            echo "## ✅ Pull Request Created!" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "- **Branch:** \`${{ steps.metadata.outputs.branch }}\`" >> $GITHUB_STEP_SUMMARY
-            echo "- **Session:** ${{ steps.metadata.outputs.session_id }}" >> $GITHUB_STEP_SUMMARY
+            {
+              echo "## ✅ Pull Request Created!"
+              echo ""
+              echo "- **Branch:** \`${{ steps.metadata.outputs.branch }}\`"
+              echo "- **Session:** ${{ steps.metadata.outputs.session_id }}"
+            } >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "## ℹ️ Pull Request Already Exists" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "- **Branch:** \`${{ steps.metadata.outputs.branch }}\`" >> $GITHUB_STEP_SUMMARY
+            {
+              echo "## ℹ️ Pull Request Already Exists"
+              echo ""
+              echo "- **Branch:** \`${{ steps.metadata.outputs.branch }}\`"
+            } >> "$GITHUB_STEP_SUMMARY"
           fi

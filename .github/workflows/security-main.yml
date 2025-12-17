@@ -175,10 +175,12 @@ jobs:
     steps:
       - name: Security Summary
         run: |
-          echo "## Security Main Branch Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- NPM Audit: ${{ needs.npm-audit.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- SBOM Generation: ${{ needs.sbom.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- CodeQL Analysis: ${{ needs.codeql.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- OpenSSF Scorecard: ${{ needs.scorecard.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- License Check: ${{ needs.license-check.result }}" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Security Main Branch Summary"
+            echo ""
+            echo "- NPM Audit: ${{ needs.npm-audit.result }}"
+            echo "- SBOM Generation: ${{ needs.sbom.result }}"
+            echo "- CodeQL Analysis: ${{ needs.codeql.result }}"
+            echo "- OpenSSF Scorecard: ${{ needs.scorecard.result }}"
+            echo "- License Check: ${{ needs.license-check.result }}"
+          } >> "$GITHUB_STEP_SUMMARY"

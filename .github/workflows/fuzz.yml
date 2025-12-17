@@ -70,10 +70,12 @@ jobs:
       - name: Fuzz Summary
         if: always()
         run: |
-          echo "## 🔍 Quick Fuzz Test Results (PR)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Runs:** 100" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## 🔍 Quick Fuzz Test Results (PR)"
+            echo ""
+            echo "- **Runs:** 100"
+            echo "- **Status:** ${{ job.status }}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # Extended fuzz for scheduled runs
   fuzz-extended:
@@ -104,11 +106,13 @@ jobs:
       - name: Generate fuzz report
         if: always()
         run: |
-          echo "# Fuzz Test Report" > fuzz-report.md
-          echo "" >> fuzz-report.md
-          echo "**Date:** $(date)" >> fuzz-report.md
-          echo "**Runs:** ${{ github.event.inputs.num_runs || '5000' }}" >> fuzz-report.md
-          echo "**Status:** ${{ job.status }}" >> fuzz-report.md
+          {
+            echo "# Fuzz Test Report"
+            echo ""
+            echo "**Date:** $(date)"
+            echo "**Runs:** ${{ github.event.inputs.num_runs || '5000' }}"
+            echo "**Status:** ${{ job.status }}"
+          } > fuzz-report.md
 
       - name: Upload fuzz report
         if: always()
@@ -121,8 +125,9 @@ jobs:
       - name: Fuzz Summary
         if: always()
         run: |
-          echo "## 🔍 Extended Fuzz Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Runs:** ${{ github.event.inputs.num_runs || '5000' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Duration:** ${{ job.duration }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## 🔍 Extended Fuzz Test Results"
+            echo ""
+            echo "- **Runs:** ${{ github.event.inputs.num_runs || '5000' }}"
+            echo "- **Status:** ${{ job.status }}"
+          } >> "$GITHUB_STEP_SUMMARY"

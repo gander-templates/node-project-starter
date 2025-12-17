@@ -31,11 +31,13 @@ jobs:
       - name: Release Summary
         if: steps.release.outputs.release_created
         run: |
-          echo "## 🎉 Release Created!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version:** ${{ steps.release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tag:** ${{ steps.release.outputs.tag_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Release URL:** ${{ steps.release.outputs.html_url }}" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## 🎉 Release Created!"
+            echo ""
+            echo "- **Version:** ${{ steps.release.outputs.version }}"
+            echo "- **Tag:** ${{ steps.release.outputs.tag_name }}"
+            echo "- **Release URL:** ${{ steps.release.outputs.html_url }}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   publish-npm:
     needs: release-please
@@ -90,10 +92,12 @@ jobs:
 
       - name: NPM Publish Summary
         run: |
-          echo "## 📦 NPM Package Published!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Package:** @gander-templates/node-project-starter" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version:** ${{ needs.release-please.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **NPM URL:** https://www.npmjs.com/package/@gander-templates/node-project-starter/v/${{ needs.release-please.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Provenance:** Enabled ✅" >> $GITHUB_STEP_SUMMARY
-          echo "- **SLSA Attestation:** Generated ✅" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## 📦 NPM Package Published!"
+            echo ""
+            echo "- **Package:** @gander-templates/node-project-starter"
+            echo "- **Version:** ${{ needs.release-please.outputs.version }}"
+            echo "- **NPM URL:** https://www.npmjs.com/package/@gander-templates/node-project-starter/v/${{ needs.release-please.outputs.version }}"
+            echo "- **Provenance:** Enabled ✅"
+            echo "- **SLSA Attestation:** Generated ✅"
+          } >> "$GITHUB_STEP_SUMMARY"

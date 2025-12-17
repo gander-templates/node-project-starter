@@ -29,7 +29,14 @@ jobs:
   # Review dependency changes
   dependency-review:
     needs: changes
-    if: needs.changes.outputs.dependencies == 'true'
+    # Skip on template repository (requires Dependency graph to be enabled)
+    # To enable on your repository:
+    # 1. Go to Settings → Code security and analysis
+    # 2. Enable "Dependency graph"
+    # 3. Enable "Dependabot alerts" (recommended)
+    if: |
+      github.repository != 'gander-templates/node-project-starter' &&
+      needs.changes.outputs.dependencies == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -59,12 +66,14 @@ jobs:
     steps:
       - name: Dependency Review Summary
         run: |
-          echo "## 🔍 Dependency Review Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status:** ${{ needs.dependency-review.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ needs.dependency-review.result }}" == "success" ]; then
-            echo "✅ No security vulnerabilities or license issues found." >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ Security vulnerabilities or license issues detected. Check the dependency review job for details." >> $GITHUB_STEP_SUMMARY
-          fi
+          {
+            echo "## 🔍 Dependency Review Results"
+            echo ""
+            echo "- **Status:** ${{ needs.dependency-review.result }}"
+            echo ""
+            if [ "${{ needs.dependency-review.result }}" == "success" ]; then
+              echo "✅ No security vulnerabilities or license issues found."
+            else
+              echo "❌ Security vulnerabilities or license issues detected. Check the dependency review job for details."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
