@@ -43,7 +43,7 @@ jobs:
 
       - name: Run actionlint
         id: actionlint
-        uses: raven-actions/actionlint@v0.2.4
+        uses: raven-actions/actionlint@v2
         with:
           matcher: true
           cache: true
