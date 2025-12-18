@@ -255,46 +255,7 @@ npm run test:ui       # Interactive UI
 npm run coverage      # Coverage report
 ```
 
-## 🤝 Contributing
-
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for:
-
-- Development setup
-- Conventional commit format
-- Test-Driven Development (TDD) workflow
-- Code quality standards
-- Pull request process
-
-**Quick contribution steps:**
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feat/amazing-feature`)
-3. Write tests first (TDD!)
-4. Implement feature
-5. Commit changes (`git commit -m 'feat: add amazing feature'`)
-6. Push to branch (`git push origin feat/amazing-feature`)
-7. Open Pull Request
-
 ## 📜 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
-
-- **BiomeJS** - Ultra-fast toolchain
-- **Vitest** - Blazing fast testing
-- **tsdown** - Modern bundler
-- **Release Please** - Automated releases
-- **GitHub Actions** - CI/CD automation
-
-## 📞 Support
-
-- **Issues**: [Create an issue](https://github.com/gander-templates/node-project-starter/issues/new/choose)
-- **Discussions**: [GitHub Discussions](https://github.com/gander-templates/node-project-starter/discussions)
-- **Security**: See [SECURITY.md](SECURITY.md)
-
----
-
-**Made with ❤️ by [Adam Gąsowski](https://github.com/gander)**
-
-**Star ⭐ this repository if you find it helpful!**
