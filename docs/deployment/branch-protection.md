@@ -1,14 +1,152 @@
 # Branch Protection Setup Guide
 
-This guide explains how to configure branch protection rules for the `main` branch to ensure code quality and security.
+This guide explains how to configure branch protection rules and repository settings for the `main` branch to ensure code quality and security.
 
 ## Table of Contents
 
+- [Repository Settings (Required First)](#repository-settings-required-first)
 - [Why Branch Protection?](#why-branch-protection)
 - [Recommended Settings](#recommended-settings)
 - [Step-by-Step Setup](#step-by-step-setup)
 - [Required Status Checks](#required-status-checks)
 - [Advanced Configuration](#advanced-configuration)
+
+---
+
+## Repository Settings (Required First)
+
+**Before configuring branch protection**, set up these essential repository settings:
+
+### Pull Request Settings
+
+Navigate to: **Settings → General → Pull Requests**
+
+#### Always suggest updating pull request branches
+
+- ✅ **Enable this setting**
+
+**What it does:**
+- Shows a button to update PR branches when they're behind the base branch
+- Helps prevent merge conflicts
+- Ensures PRs are tested against latest code
+
+**Benefits:**
+- Reduces "works on my branch but fails on main" issues
+- Makes it easier to keep PRs up to date
+- Improves CI/CD reliability
+
+#### Allow auto-merge
+
+- ✅ **Enable this setting**
+
+**What it does:**
+- Allows PRs to be marked for automatic merge when all checks pass
+- Used by Renovate and auto-pr.yml workflow
+- Merges automatically when all requirements are met
+
+**Benefits:**
+- Enables automated dependency updates
+- Reduces manual PR management
+- Works with claude/** branch auto-PR workflow
+
+**Note:** Auto-merge respects branch protection rules - PRs won't merge unless all required checks pass.
+
+#### Automatically delete head branches
+
+- ✅ **Enable this setting**
+
+**What it does:**
+- Automatically deletes feature branches after PR merge
+- Keeps repository clean
+- Reduces clutter from old branches
+
+**Benefits:**
+- No manual branch cleanup needed
+- Prevents confusion from stale branches
+- Maintains clean branch list
+
+**Note:** Only deletes head branches, never the base branch (main).
+
+### GitHub Actions Permissions
+
+Navigate to: **Settings → Actions → General → Workflow permissions**
+
+#### Allow GitHub Actions to create and approve pull requests
+
+- ✅ **Enable this setting**
+
+**What it does:**
+- Allows workflows to create PRs programmatically
+- Used by auto-pr.yml workflow for claude/** branches
+- Enables release-please to create release PRs
+
+**Benefits:**
+- Enables auto-pr.yml workflow
+- Allows release-please to function
+- Supports automated workflows
+
+**Required for:**
+- `auto-pr.yml` - Creates PRs from claude/** branches
+- `release-please.yml` - Creates release PRs
+- Any custom automation that creates PRs
+
+**Security note:** This permission is safe because:
+- Workflows still run from your repository
+- Branch protection rules still apply
+- Status checks must still pass
+
+**Organization-level setting:**
+
+If this is an organization repository, you may also need to enable this at the organization level:
+
+1. Go to: **Organization Settings → Actions → General**
+2. Under "Workflow permissions", enable:
+   - ✅ Allow GitHub Actions to create and approve pull requests
+
+### Code Security Settings
+
+Navigate to: **Settings → Code security and analysis**
+
+#### Require actions to be pinned to a full-length commit SHA
+
+- ✅ **Enable this setting** (if available)
+
+**What it does:**
+- Requires GitHub Actions to use full commit SHAs instead of tags
+- Example: `actions/checkout@a1b2c3d...` instead of `actions/checkout@v4`
+- Prevents supply chain attacks via tag manipulation
+
+**Benefits:**
+- Enhanced security (SLSA requirement)
+- Prevents tag hijacking attacks
+- Immutable action versions
+
+**Example change:**
+```yaml
+# Before (tag-based)
+- uses: actions/checkout@v4
+
+# After (SHA-pinned)
+- uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v4.1.1
+```
+
+**How to implement:**
+- Use tools like `pin-github-action` or Dependabot
+- Add comments with version tags for readability
+- Update SHAs when updating action versions
+
+**Note:** This may not be available on all GitHub plans. If unavailable, consider using Dependabot to monitor action versions.
+
+### Verification Checklist
+
+After configuring repository settings, verify:
+
+- [ ] "Update branch" button appears on PRs when behind base
+- [ ] "Enable auto-merge" button appears on PRs
+- [ ] Merged PRs automatically delete their branches
+- [ ] auto-pr.yml workflow can create PRs from claude/** branches
+- [ ] release-please.yml workflow can create release PRs
+- [ ] GitHub Actions are pinned to commit SHAs (if enabled)
 
 ---
 

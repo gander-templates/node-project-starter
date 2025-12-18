@@ -34,10 +34,21 @@
    - Configure NPM Trusted Publishers for secure publishing
    - No manual token management required
 
-4. **Configure branch protection** (recommended):
+4. **Configure repository settings** (recommended):
+   - Go to Settings → General → Pull Requests:
+     - ✅ Always suggest updating pull request branches
+     - ✅ Allow auto-merge
+     - ✅ Automatically delete head branches
+   - Go to Settings → Actions → General → Workflow permissions:
+     - ✅ Allow GitHub Actions to create and approve pull requests
+   - Go to Settings → Code security and analysis → Pinned actions:
+     - ✅ Require actions to be pinned to a full-length commit SHA
+   - See [docs/deployment/branch-protection.md](docs/deployment/branch-protection.md) for complete setup guide
+
+5. **Configure branch protection** (recommended):
    - Follow [docs/deployment/branch-protection.md](docs/deployment/branch-protection.md)
 
-5. **Start coding!**:
+6. **Start coding!**:
    - Write tests first (TDD methodology)
    - Replace sample code in `src/index.ts`
    - Update tests in `tests/index.test.ts`
