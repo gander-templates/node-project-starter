@@ -380,10 +380,6 @@ node-project-starter/
 ├── .github/               # GitHub configuration
 │   ├── workflows/        # CI/CD workflows (9 files)
 │   └── ISSUE_TEMPLATE/   # Issue templates
-├── docs/                 # Documentation
-│   ├── architecture/     # ADRs
-│   ├── deployment/       # Deployment guides
-│   └── api/              # API documentation
 ├── src/                  # Source code
 │   └── index.ts          # Main entry point
 ├── tests/                # Test files

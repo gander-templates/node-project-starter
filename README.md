@@ -43,10 +43,12 @@
      - ✅ Allow GitHub Actions to create and approve pull requests
    - Go to Settings → Code security and analysis → Pinned actions:
      - ✅ Require actions to be pinned to a full-length commit SHA
-   - See [docs/deployment/branch-protection.md](docs/deployment/branch-protection.md) for complete setup guide
 
 5. **Configure branch protection** (recommended):
-   - Follow [docs/deployment/branch-protection.md](docs/deployment/branch-protection.md)
+   - Go to Settings → Branches → Add rule for `main`
+   - ✅ Require pull request before merging
+   - ✅ Require status checks to pass
+   - ✅ Restrict force pushes and deletions
 
 6. **Start coding!**:
    - Write tests first (TDD methodology)
@@ -149,10 +151,6 @@ git commit -m "docs: update API documentation"
 
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute (includes TDD guide)
 - **[SECURITY.md](SECURITY.md)** - Security policy and vulnerability reporting
-- **[docs/deployment/security.md](docs/deployment/security.md)** - Security implementation details
-- **[docs/deployment/branch-protection.md](docs/deployment/branch-protection.md)** - Branch protection setup
-- **[docs/architecture/](docs/architecture/)** - Architecture Decision Records (ADRs)
-- **[docs/api/](docs/api/)** - API documentation guidelines
 
 ## 🔄 Release Process
 
