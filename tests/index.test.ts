@@ -68,7 +68,7 @@ describe("Mathematical Operations", () => {
 			expect(subtract(0, 5)).toBe(-5);
 		});
 
-		test.prop([fc.integer(), fc.integer()]()"should satisfy a - b + b = a", (a, b) => {
+		test.prop([fc.integer(), fc.integer()])("should satisfy a - b + b = a", (a, b) => {
 			expect(add(subtract(a, b), b)).toBe(a);
 		});
 	});
