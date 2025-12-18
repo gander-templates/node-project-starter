@@ -45,6 +45,7 @@ Thumbs.db
 *.tmp
 *.temp
 
-# Package manager lock files (keep package-lock.json)
+# Package manager lock files
+package-lock.json
 # yarn.lock
 # pnpm-lock.yaml
