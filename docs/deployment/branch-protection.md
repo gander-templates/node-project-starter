@@ -9,6 +9,7 @@ This guide explains how to configure branch protection rules and repository sett
   - [GitHub Actions Permissions](#github-actions-permissions)
   - [Code Security Settings](#code-security-settings)
   - [Additional Security Settings](#additional-security-settings)
+  - [Renovate Configuration (Dependency Management)](#renovate-configuration-dependency-management)
   - [Merge Strategy Settings](#merge-strategy-settings)
   - [Actions Workflow Permissions](#actions-workflow-permissions)
   - [Repository Features](#repository-features)
@@ -209,13 +210,34 @@ Navigate to: **Settings → Code security and analysis**
 
 #### Dependabot version updates
 
-- ⚠️ **Skip this setting** (use Renovate instead)
+- ⚠️ **DISABLE this setting** (use Renovate instead)
 
-**Why skip:**
+**Why disable:**
 - Template already uses Renovate for version updates
 - Renovate provides more configuration options
 - Avoid duplicate PRs from both tools
 - Dependabot security updates still work independently
+
+**IMPORTANT:** You MUST disable Dependabot version updates to avoid conflicts with Renovate!
+
+**How to disable:**
+1. Go to: **Settings → Code security and analysis**
+2. Find "Dependabot version updates"
+3. If enabled, click **Disable**
+4. Do NOT create `.github/dependabot.yml` file
+
+**If you already have `.github/dependabot.yml`:**
+```bash
+# Remove Dependabot version updates configuration
+rm .github/dependabot.yml
+git add .github/dependabot.yml
+git commit -m "chore: remove dependabot.yml (using Renovate instead)"
+```
+
+**What stays enabled:**
+- ✅ **Dependabot alerts** - Vulnerability notifications
+- ✅ **Dependabot security updates** - Automatic security patches
+- ❌ **Dependabot version updates** - DISABLED (Renovate handles this)
 
 #### Code scanning (CodeQL)
 
@@ -284,6 +306,344 @@ Navigate to: **Settings → Code security and analysis**
 2. You receive notification
 3. Collaborate on fix in private fork
 4. Publish advisory after fix is released
+
+---
+
+## Renovate Configuration (Dependency Management)
+
+### Why Renovate Instead of Dependabot?
+
+**Renovate advantages:**
+- ✅ More flexible configuration (grouping, scheduling, automerge rules)
+- ✅ Better monorepo support
+- ✅ Smarter dependency grouping (BiomeJS, Vitest, TypeScript together)
+- ✅ More control over PR creation and merging
+- ✅ Works alongside Dependabot security updates
+
+**Division of responsibilities:**
+- **Renovate** → Regular version updates (patch, minor, major)
+- **Dependabot security updates** → Emergency security patches only
+
+### Activating Renovate
+
+**Option 1: GitHub App (Recommended)**
+
+1. **Install Renovate GitHub App:**
+   - Visit: https://github.com/apps/renovate
+   - Click **Install**
+   - Choose repositories to enable
+   - Select your repository
+
+2. **Configure access:**
+   - Grant read/write access to code
+   - Grant access to pull requests
+   - Grant access to issues (for dependency dashboard)
+
+3. **Wait for onboarding PR:**
+   - Renovate creates initial "Configure Renovate" PR
+   - Reviews your `renovate.json` configuration
+   - Merge to activate
+
+**Option 2: Self-hosted Renovate (Advanced)**
+
+```bash
+# Run Renovate as GitHub Action
+# Add .github/workflows/renovate.yml
+# See: https://docs.renovatebot.com/modules/platform/github/
+```
+
+### Understanding the Default Configuration
+
+The template includes a pre-configured `renovate.json` with opinionated defaults:
+
+**Location:** `/renovate.json`
+
+**Key features:**
+
+```json
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",          // Renovate best practices
+    ":semanticCommits",            // Use conventional commits
+    ":semanticCommitTypeAll(chore)" // All updates are chore(deps):
+  ],
+  "packageRules": [
+    // Auto-merge patch updates (1.0.0 → 1.0.1)
+    {
+      "matchUpdateTypes": ["patch"],
+      "automerge": true
+    },
+    // Auto-merge minor dev dependency updates
+    {
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor"],
+      "automerge": true
+    },
+    // Group related packages together
+    {
+      "matchPackagePatterns": ["^@biomejs/"],
+      "groupName": "BiomeJS"
+    }
+  ],
+  "schedule": ["before 6am on Monday"], // Weekly updates
+  "prConcurrentLimit": 10,              // Max 10 PRs at once
+  "labels": ["dependencies", "renovate"]
+}
+```
+
+**What this configuration does:**
+
+1. **Auto-merges safe updates:**
+   - Patch updates (bug fixes) → Auto-merge
+   - Minor devDependencies → Auto-merge
+   - Major updates → Manual review required
+
+2. **Groups related packages:**
+   - BiomeJS packages → Single PR
+   - Vitest packages → Single PR
+   - TypeScript packages → Single PR
+
+3. **Scheduled updates:**
+   - Runs Mondays before 6am
+   - Avoids spamming PRs during workweek
+
+4. **Conventional commits:**
+   - Format: `chore(deps): update typescript to v5.3.3`
+   - Works with Release Please
+
+### Alternative Configuration: Gander Settings
+
+For simpler setup, use the Gander automerge preset:
+
+**Create `renovate.json`:**
+
+```json
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>gander-settings/renovate:automerge"]
+}
+```
+
+**What this includes:**
+- Aggressive automerge strategy
+- Sensible grouping presets
+- Production-ready defaults
+
+**To use this preset:**
+
+```bash
+# Replace current renovate.json
+cat > renovate.json << 'EOF'
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>gander-settings/renovate:automerge"]
+}
+EOF
+
+git add renovate.json
+git commit -m "chore: switch to gander-settings renovate preset"
+git push
+```
+
+### Customizing Renovate Configuration
+
+**Common customization examples:**
+
+#### Disable automerge for production dependencies
+
+```json
+{
+  "packageRules": [
+    {
+      "matchDepTypes": ["dependencies"],
+      "automerge": false
+    }
+  ]
+}
+```
+
+#### Change update schedule
+
+```json
+{
+  "schedule": ["after 10pm every weekday", "every weekend"]
+}
+```
+
+#### Add custom package grouping
+
+```json
+{
+  "packageRules": [
+    {
+      "matchPackagePatterns": ["^@aws-sdk/"],
+      "groupName": "AWS SDK"
+    }
+  ]
+}
+```
+
+#### Pin specific package versions
+
+```json
+{
+  "packageRules": [
+    {
+      "matchPackageNames": ["react"],
+      "allowedVersions": "18.x"
+    }
+  ]
+}
+```
+
+#### Enable Dependency Dashboard
+
+```json
+{
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "🤖 Renovate Dependency Dashboard"
+}
+```
+
+This creates a GitHub issue with all pending updates.
+
+### Verifying Renovate Setup
+
+After activation, verify:
+
+1. **Check for onboarding PR:**
+   ```bash
+   gh pr list --label "renovate"
+   ```
+
+2. **Wait for first update cycle:**
+   - Should run on configured schedule (Monday 6am by default)
+   - Or trigger manually via Dependency Dashboard
+
+3. **Review created PRs:**
+   - Should follow conventional commit format
+   - Should have `dependencies` and `renovate` labels
+   - Should auto-merge if configured
+
+4. **Check Renovate logs:**
+   - GitHub App shows execution logs
+   - Visible in PR checks
+
+### Troubleshooting Renovate
+
+#### "No PRs created"
+
+**Possible causes:**
+- All dependencies are up to date
+- Schedule hasn't run yet
+- Configuration error
+
+**Solutions:**
+```bash
+# Validate renovate.json
+npx -p renovate -c 'renovate-config-validator'
+
+# Check Renovate logs in GitHub App
+# Or enable dependency dashboard to see pending updates
+```
+
+#### "Automerge not working"
+
+**Requirements for automerge:**
+- ✅ Repository setting "Allow auto-merge" enabled
+- ✅ Branch protection allows automerge
+- ✅ All status checks pass
+- ✅ `automerge: true` in renovate.json
+
+**Check settings:**
+```bash
+# Verify auto-merge is enabled
+# Settings → General → Pull Requests → Allow auto-merge
+```
+
+#### "Conflicts with Dependabot"
+
+**Solution:**
+- Disable Dependabot version updates (see above)
+- Keep only Dependabot security updates
+- Renovate will handle all version updates
+
+#### "Too many PRs created"
+
+**Solutions:**
+
+```json
+{
+  "prConcurrentLimit": 3,  // Reduce concurrent PRs
+  "prHourlyLimit": 2,      // Limit PR creation rate
+  "schedule": ["before 6am on Monday"],  // Less frequent
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "all non-major dependencies"  // Group more
+    }
+  ]
+}
+```
+
+### Renovate Best Practices
+
+1. **Start conservative:**
+   - Disable automerge initially
+   - Review PRs manually for first few weeks
+   - Gradually enable automerge for safe updates
+
+2. **Use grouping:**
+   - Group related packages (frameworks, test tools)
+   - Reduces PR noise
+   - Easier to review related changes together
+
+3. **Schedule wisely:**
+   - Avoid workweek disruptions
+   - Weekend or early morning updates
+   - Coordinate with release schedule
+
+4. **Monitor automerge:**
+   - Check CI logs regularly
+   - Set up notifications for failed automerges
+   - Review automerged changes weekly
+
+5. **Keep config in repo:**
+   - Commit `renovate.json` to repository
+   - Version control configuration changes
+   - Share configuration across team
+
+### Integration with GitHub Actions
+
+Renovate works seamlessly with the template's workflows:
+
+- **test.yml** → Runs on Renovate PRs
+- **security-pr.yml** → Scans Renovate dependency changes
+- **dependency-review.yml** → Reviews new dependencies
+- **auto-pr.yml** → Can automerge Renovate PRs
+
+**No additional configuration needed!**
+
+### Renovate vs Dependabot: Quick Reference
+
+| Feature | Renovate | Dependabot |
+|---------|----------|------------|
+| **Version updates** | ✅ (recommended) | ❌ Disable |
+| **Security updates** | ⚠️ Limited | ✅ Keep enabled |
+| **Automerge** | ✅ Flexible | ⚠️ Basic |
+| **Grouping** | ✅ Advanced | ❌ Limited |
+| **Scheduling** | ✅ Flexible | ⚠️ Basic |
+| **Monorepo support** | ✅ Excellent | ⚠️ Limited |
+| **Configuration** | ✅ Very flexible | ⚠️ Limited |
+| **Free for OSS** | ✅ Yes | ✅ Yes |
+
+**Recommended setup:**
+- ✅ Renovate → All version updates
+- ✅ Dependabot security updates → Emergency patches
+- ❌ Dependabot version updates → Disabled
+
+---
 
 ### Merge Strategy Settings
 
@@ -496,10 +856,18 @@ After configuring repository settings, verify:
 **Security:**
 - [ ] Dependabot alerts are enabled
 - [ ] Dependabot security updates are enabled
+- [ ] Dependabot version updates are DISABLED
 - [ ] Secret scanning is enabled
 - [ ] Push protection is enabled (if available)
 - [ ] Private vulnerability reporting is enabled
 - [ ] CodeQL analysis is running
+
+**Dependency Management:**
+- [ ] Renovate GitHub App is installed
+- [ ] Renovate onboarding PR is merged
+- [ ] renovate.json configuration is committed
+- [ ] Renovate creates PRs on schedule
+- [ ] Automerge works for safe updates
 
 **Merge Strategy:**
 - [ ] Squash merging is enabled
@@ -935,11 +1303,21 @@ After setting up branch protection, verify:
 ✅ Require actions pinned to commit SHA (if available)
 ✅ Dependabot alerts
 ✅ Dependabot security updates
-⚠️ Dependabot version updates (skip - use Renovate)
+❌ Dependabot version updates (DISABLE - use Renovate)
 ✅ Code scanning (CodeQL)
 ✅ Secret scanning
 ✅ Push protection (if available)
 ✅ Private vulnerability reporting
+```
+
+**Dependency Management (Renovate):**
+```
+✅ Install Renovate GitHub App: https://github.com/apps/renovate
+✅ Merge Renovate onboarding PR
+✅ Configure renovate.json (already included in template)
+✅ Verify automerge works for safe updates
+
+Alternative: Use gander-settings/renovate:automerge preset
 ```
 
 **Repository Features (Settings → General → Features):**
@@ -981,11 +1359,25 @@ After setting up branch protection, verify:
 
 ## Additional Resources
 
-- **GitHub Branch Protection**: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches
+### GitHub Documentation
+- **Branch Protection**: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches
 - **Signed Commits**: https://docs.github.com/en/authentication/managing-commit-signature-verification
 - **Code Owners**: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+- **Dependabot**: https://docs.github.com/en/code-security/dependabot
+
+### Renovate Documentation
+- **Renovate Documentation**: https://docs.renovatebot.com/
+- **Renovate GitHub App**: https://github.com/apps/renovate
+- **Configuration Reference**: https://docs.renovatebot.com/configuration-options/
+- **Preset Configs**: https://docs.renovatebot.com/presets-default/
+- **Automerge Configuration**: https://docs.renovatebot.com/key-concepts/automerge/
+- **Package Grouping**: https://docs.renovatebot.com/noise-reduction/#package-grouping
+
+### Gander Presets
+- **gander-settings/renovate**: https://github.com/gander-settings/renovate
+- **Automerge preset**: `github>gander-settings/renovate:automerge`
 
 ---
 
-**Last Updated**: 2025-12-17
-**Version**: 1.0
+**Last Updated**: 2025-12-18
+**Version**: 1.1
