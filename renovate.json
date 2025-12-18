@@ -1,10 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended",
-    ":semanticCommits",
-    ":semanticCommitTypeAll(chore)"
-  ],
+  "extends": ["config:recommended", ":semanticCommits", ":semanticCommitTypeAll(chore)"],
   "packageRules": [
     {
       "description": "Auto-merge patch updates",
@@ -37,9 +33,7 @@
       "groupName": "TypeScript"
     }
   ],
-  "schedule": [
-    "before 6am on Monday"
-  ],
+  "schedule": ["before 6am on Monday"],
   "prConcurrentLimit": 10,
   "prHourlyLimit": 5,
   "labels": ["dependencies", "renovate"],

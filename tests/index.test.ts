@@ -5,19 +5,19 @@
  * Replace these tests with your actual test cases.
  */
 
-import { describe, expect, it } from "vitest";
 import { fc, test } from "@fast-check/vitest";
+import { describe, expect, it } from "vitest";
 import {
 	add,
 	calculate,
 	divide,
+	type GreetingOptions,
 	greet,
 	isEven,
 	isValidEmail,
 	multiply,
-	subtract,
-	type GreetingOptions,
 	type Operation,
+	subtract,
 } from "../src/index.js";
 
 describe("Mathematical Operations", () => {
@@ -45,13 +45,10 @@ describe("Mathematical Operations", () => {
 			expect(add(a, b)).toBe(add(b, a));
 		});
 
-		test.prop([fc.integer(), fc.integer()])(
-			"should be associative with third number",
-			(a, b) => {
-				const c = 10;
-				expect(add(add(a, b), c)).toBe(add(a, add(b, c)));
-			},
-		);
+		test.prop([fc.integer(), fc.integer()])("should be associative with third number", (a, b) => {
+			const c = 10;
+			expect(add(add(a, b), c)).toBe(add(a, add(b, c)));
+		});
 	});
 
 	describe("subtract", () => {
@@ -68,7 +65,7 @@ describe("Mathematical Operations", () => {
 			expect(subtract(0, 5)).toBe(-5);
 		});
 
-		test.prop([fc.integer(), fc.integer()]()"should satisfy a - b + b = a", (a, b) => {
+		test.prop([fc.integer(), fc.integer()])("should satisfy a - b + b = a", (a, b) => {
 			expect(add(subtract(a, b), b)).toBe(a);
 		});
 	});
@@ -225,14 +222,15 @@ describe("Calculator Function", () => {
 		});
 
 		// Property-based test for all operations
-		test.prop([fc.integer(), fc.integer({ min: 1 }), fc.constantFrom<Operation>("add", "subtract", "multiply", "divide")])(
-			"should return a number for valid operations",
-			(a, b, op) => {
-				const result = calculate(a, b, op);
-				expect(typeof result).toBe("number");
-				expect(Number.isFinite(result)).toBe(true);
-			},
-		);
+		test.prop([
+			fc.integer(),
+			fc.integer({ min: 1 }),
+			fc.constantFrom<Operation>("add", "subtract", "multiply", "divide"),
+		])("should return a number for valid operations", (a, b, op) => {
+			const result = calculate(a, b, op);
+			expect(typeof result).toBe("number");
+			expect(Number.isFinite(result)).toBe(true);
+		});
 	});
 });
 
