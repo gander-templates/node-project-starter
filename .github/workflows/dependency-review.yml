@@ -29,14 +29,12 @@ jobs:
   # Review dependency changes
   dependency-review:
     needs: changes
-    # Skip on template repository (requires Dependency graph to be enabled)
+    # Requires Dependency graph to be enabled
     # To enable on your repository:
     # 1. Go to Settings → Code security and analysis
     # 2. Enable "Dependency graph"
     # 3. Enable "Dependabot alerts" (recommended)
-    if: |
-      github.repository != 'gander-templates/node-project-starter' &&
-      needs.changes.outputs.dependencies == 'true'
+    if: needs.changes.outputs.dependencies == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

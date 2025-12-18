@@ -37,10 +37,7 @@ jobs:
   # Test on Linux Node 22 only
   test:
     needs: changes
-    # Skip on template repository (no package-lock.json)
-    if: |
-      github.repository != 'gander-templates/node-project-starter' &&
-      (needs.changes.outputs.src == 'true' || github.event_name == 'workflow_dispatch')
+    if: needs.changes.outputs.src == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
 
     steps:
@@ -52,6 +49,13 @@ jobs:
         with:
           node-version: 22
           cache: 'npm'
+
+      - name: Create package-lock.json if missing
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "package-lock.json not found, running npm install to create it"
+            npm install --package-lock-only
+          fi
 
       - name: Install dependencies
         run: npm ci
