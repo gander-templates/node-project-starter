@@ -35,20 +35,75 @@
    - No manual token management required
 
 4. **Configure repository settings** (recommended):
-   - Go to Settings → General → Pull Requests:
-     - ✅ Always suggest updating pull request branches
-     - ✅ Allow auto-merge
-     - ✅ Automatically delete head branches
-   - Go to Settings → Actions → General → Workflow permissions:
-     - ✅ Allow GitHub Actions to create and approve pull requests
-   - Go to Settings → Code security and analysis → Pinned actions:
-     - ✅ Require actions to be pinned to a full-length commit SHA
+
+   **Pull Request Settings** (Settings → General → Pull Requests):
+   - ✅ Always suggest updating pull request branches
+   - ✅ Allow auto-merge
+   - ✅ Automatically delete head branches
+   - ✅ Auto-close issues with merged linked pull requests
+   - ✅ Allow squash merging + Default to pull request title
+   - ⚠️ Disable merge commits (for cleaner history)
+
+   **GitHub Actions** (Settings → Actions → General → Workflow permissions):
+   - ✅ Allow GitHub Actions to create and approve pull requests
+   - ✅ Default GITHUB_TOKEN: Read-only (least privilege)
+   - ✅ Fork workflows: Require approval for first-time contributors
+
+   **Security Settings** (Settings → Code security and analysis):
+   - ✅ Dependabot alerts (vulnerability notifications)
+   - ✅ Dependabot security updates (auto PRs for security issues)
+   - ❌ **Dependabot version updates - DISABLE** (use Renovate instead)
+   - ✅ Secret scanning + Push protection
+   - ✅ Code scanning (CodeQL)
+   - ✅ Private vulnerability reporting
+
+   **Renovate Setup** (Dependency Management):
+   - Install: https://github.com/apps/renovate
+   - Config in `/renovate.json`: auto-merge patch updates + minor devDeps
+   - Why Renovate? Better grouping, scheduling, automerge than Dependabot
+   - Validate: `npx -p renovate -c 'renovate-config-validator'`
+
+   **Repository Features** (Settings → General → Features):
+   - ✅ Issues
+   - ❌ Wikis (use `docs/` instead)
+   - ⚠️ Projects, Discussions, Sponsorships (optional)
 
 5. **Configure branch protection** (recommended):
-   - Go to Settings → Branches → Add rule for `main`
-   - ✅ Require pull request before merging
+
+   **Settings → Branches → Add rule for `main`**
+
+   **Essential (Solo Developer):**
    - ✅ Require status checks to pass
-   - ✅ Restrict force pushes and deletions
+   - ✅ Restrict force pushes
+   - ✅ Restrict deletions
+
+   **Recommended (Best Practice):**
+   - ✅ Require pull request before merging
+     - Required approvals: 1
+     - Dismiss stale approvals
+   - ✅ Require status checks to pass
+     - Require branches up to date
+   - ✅ Require conversation resolution
+   - ✅ Require linear history
+   - ✅ Lock branch
+   - ✅ Restrict force pushes
+   - ✅ Restrict deletions
+
+   **Optional:**
+   - ⚠️ Require signed commits (enhanced security)
+   - ⚠️ Require Code Owners review
+
+   **Required Status Checks** (must run workflows first):
+   - `test-summary` - All tests pass
+   - `actionlint` - Workflow validation
+   - `dependency-review` - Dependency security
+   - `npm-audit` - Security scan (conditional)
+
+   **Verification:**
+   ```bash
+   git push origin main         # Should fail
+   git push --force origin main # Should fail
+   ```
 
 6. **Start coding!**:
    - Write tests first (TDD methodology)
