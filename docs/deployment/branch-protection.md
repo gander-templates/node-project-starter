@@ -5,6 +5,14 @@ This guide explains how to configure branch protection rules and repository sett
 ## Table of Contents
 
 - [Repository Settings (Required First)](#repository-settings-required-first)
+  - [Pull Request Settings](#pull-request-settings)
+  - [GitHub Actions Permissions](#github-actions-permissions)
+  - [Code Security Settings](#code-security-settings)
+  - [Additional Security Settings](#additional-security-settings)
+  - [Merge Strategy Settings](#merge-strategy-settings)
+  - [Actions Workflow Permissions](#actions-workflow-permissions)
+  - [Repository Features](#repository-features)
+  - [Verification Checklist](#verification-checklist)
 - [Why Branch Protection?](#why-branch-protection)
 - [Recommended Settings](#recommended-settings)
 - [Step-by-Step Setup](#step-by-step-setup)
@@ -66,6 +74,34 @@ Navigate to: **Settings → General → Pull Requests**
 - Maintains clean branch list
 
 **Note:** Only deletes head branches, never the base branch (main).
+
+#### Auto-close issues with merged linked pull requests
+
+- ✅ **Enable this setting**
+
+**What it does:**
+- Automatically closes linked issues when PR is merged
+- Uses keywords in PR description (fixes #123, closes #456, resolves #789)
+- Keeps issue tracker clean and up-to-date
+
+**Benefits:**
+- No manual issue closure needed
+- Ensures issues are closed when fixes are deployed
+- Maintains accurate project status
+- Tracks which PR fixed which issue
+
+**How to use:**
+Include keywords in PR description:
+```markdown
+Fixes #123
+Closes #456, #789
+Resolves #101
+```
+
+**Supported keywords:**
+- `close`, `closes`, `closed`
+- `fix`, `fixes`, `fixed`
+- `resolve`, `resolves`, `resolved`
 
 ### GitHub Actions Permissions
 
@@ -137,16 +173,343 @@ Navigate to: **Settings → Code security and analysis**
 
 **Note:** This may not be available on all GitHub plans. If unavailable, consider using Dependabot to monitor action versions.
 
+### Additional Security Settings
+
+Navigate to: **Settings → Code security and analysis**
+
+#### Dependabot alerts
+
+- ✅ **Enable this setting**
+
+**What it does:**
+- Monitors dependencies for known vulnerabilities
+- Creates alerts when vulnerabilities are discovered
+- Provides remediation guidance
+
+**Benefits:**
+- Early vulnerability detection
+- Automatic security notifications
+- Integration with dependency-review workflow
+
+#### Dependabot security updates
+
+- ✅ **Enable this setting**
+
+**What it does:**
+- Automatically creates PRs to fix vulnerable dependencies
+- Updates to minimum secure version
+- Only updates dependencies with security issues
+
+**Benefits:**
+- Automatic security patches
+- Reduces manual security maintenance
+- Works with auto-merge for quick fixes
+
+**Note:** Different from Renovate - Dependabot handles security updates, Renovate handles version updates.
+
+#### Dependabot version updates
+
+- ⚠️ **Skip this setting** (use Renovate instead)
+
+**Why skip:**
+- Template already uses Renovate for version updates
+- Renovate provides more configuration options
+- Avoid duplicate PRs from both tools
+- Dependabot security updates still work independently
+
+#### Code scanning (CodeQL)
+
+- ✅ **Enable default setup** or **Advanced setup**
+
+**What it does:**
+- Runs CodeQL analysis automatically
+- Finds security vulnerabilities in code
+- Scans on push and PR
+
+**Benefits:**
+- Automatic security analysis
+- SARIF results uploaded to Security tab
+- GitHub Advanced Security feature
+
+**Note:** Already configured via `security-main.yml` and `security-pr.yml` workflows.
+
+#### Secret scanning
+
+- ✅ **Enable this setting**
+
+**What it does:**
+- Scans repository for accidentally committed secrets
+- Detects API keys, tokens, passwords
+- Sends alerts when secrets are found
+
+**Benefits:**
+- Prevents credential leaks
+- Automatic partner notifications (e.g., AWS, Azure)
+- Protects against supply chain attacks
+
+**Important:** Available on public repositories for free.
+
+#### Push protection
+
+- ✅ **Enable this setting** (if available)
+
+**What it does:**
+- Blocks pushes containing secrets
+- Prevents secrets from entering repository history
+- Provides immediate feedback on detected secrets
+
+**Benefits:**
+- Proactive secret protection
+- Prevents security incidents before they happen
+- Better than detecting secrets after commit
+
+**Note:** Requires secret scanning to be enabled first.
+
+#### Private vulnerability reporting
+
+- ✅ **Enable this setting**
+
+**What it does:**
+- Allows security researchers to privately report vulnerabilities
+- Creates private security advisories
+- Facilitates coordinated disclosure
+
+**Benefits:**
+- Encourages responsible disclosure
+- Gives you time to fix before public disclosure
+- Professional security reporting workflow
+
+**How it works:**
+1. Reporter creates private advisory
+2. You receive notification
+3. Collaborate on fix in private fork
+4. Publish advisory after fix is released
+
+### Merge Strategy Settings
+
+Navigate to: **Settings → General → Pull Requests**
+
+#### Allow merge commits
+
+- ⚠️ **Disable this setting** (for cleaner history)
+
+**What it does:**
+- Allows traditional merge commits with merge bubbles
+- Creates "Merge pull request #123" commits
+- Preserves all individual commits from PR
+
+**Recommendation:**
+- Disable for cleaner, linear history
+- Use squash merging instead
+- Only enable if you need full commit preservation
+
+#### Allow squash merging
+
+- ✅ **Enable this setting** (recommended)
+
+**What it does:**
+- Combines all PR commits into single commit
+- Creates clean, linear history
+- Uses PR title as commit message
+
+**Benefits:**
+- Clean Git history (one commit per PR)
+- Easy to revert entire features
+- Works well with conventional commits
+- Recommended for library projects
+
+**Configuration:**
+- ✅ **Default to pull request title**
+- This ensures PR title becomes commit message
+- Works with conventional commit format
+
+#### Allow rebase merging
+
+- ⚠️ **Optional** (advanced users only)
+
+**What it does:**
+- Replays PR commits onto base branch
+- Preserves individual commits
+- Creates linear history without merge commits
+
+**When to use:**
+- Advanced Git users
+- When individual commits matter
+- For detailed change tracking
+
+**Caution:**
+- Rewrites commit history
+- Can be confusing for beginners
+- Squash merging usually better for libraries
+
+#### Default to PR title for squash merge commits
+
+- ✅ **Enable this setting**
+
+**What it does:**
+- Uses PR title as squash commit message
+- Ensures conventional commit format
+- Maintains consistent commit history
+
+**Benefits:**
+- PR title review ensures good commit messages
+- Works with Release Please
+- Enforces conventional commits
+
+### Actions Workflow Permissions
+
+Navigate to: **Settings → Actions → General → Workflow permissions**
+
+#### Default GITHUB_TOKEN permissions
+
+- ✅ **Set to: "Read repository contents and packages permissions"**
+
+**What it does:**
+- Sets default permissions for GITHUB_TOKEN in workflows
+- Restricts workflows to read-only by default
+- Individual workflows can request more permissions
+
+**Benefits:**
+- Principle of least privilege
+- Prevents accidental modifications
+- Improves security posture
+- SLSA requirement
+
+**Note:** Workflows that need write permissions must explicitly request them:
+
+```yaml
+permissions:
+  contents: write
+  pull-requests: write
+```
+
+#### Fork pull request workflows from outside collaborators
+
+- ✅ **Set to: "Require approval for first-time contributors"**
+
+**What it does:**
+- Requires manual approval for workflow runs from first-time contributors
+- Prevents malicious workflow execution
+- Protects repository secrets
+
+**Benefits:**
+- Prevents cryptocurrency mining attacks
+- Protects GitHub Actions minutes
+- Prevents secret exfiltration
+- Standard security practice
+
+**Options explained:**
+- **Require approval for all outside collaborators**: Most secure, but slower for contributors
+- **Require approval for first-time contributors**: Balanced approach (recommended)
+- **Require approval for first-time contributors who are new to GitHub**: Least restrictive
+
+### Repository Features
+
+Navigate to: **Settings → General → Features**
+
+#### Wikis
+
+- ⚠️ **Disable** (use docs/ directory instead)
+
+**Why disable:**
+- Documentation should be versioned in Git
+- docs/ directory provides better control
+- Wiki changes don't trigger CI/CD
+- Wikis are harder to review
+
+#### Issues
+
+- ✅ **Enable** (for bug reports and feature requests)
+
+**Benefits:**
+- User feedback and bug reports
+- Feature request tracking
+- Community engagement
+- Issue templates already configured
+
+#### Sponsorships
+
+- ⚠️ **Optional** (for open source maintainers)
+
+**What it does:**
+- Displays sponsor button on repository
+- Links to funding platforms (GitHub Sponsors, Patreon, etc.)
+
+**When to enable:**
+- Open source project seeking funding
+- Want to accept donations
+- Building community-supported project
+
+#### Projects
+
+- ⚠️ **Optional** (for complex project management)
+
+**What it does:**
+- Kanban-style project boards
+- Links issues and PRs to project cards
+- Visual project planning
+
+**When to use:**
+- Large projects with multiple contributors
+- Complex roadmap management
+- Sprint planning
+
+**For solo developers:**
+- Usually not necessary
+- Issues and PRs are sufficient
+
+#### Discussions
+
+- ⚠️ **Optional** (for community engagement)
+
+**What it does:**
+- Forum-like discussions
+- Q&A separate from issues
+- Community conversation space
+
+**When to use:**
+- Popular open source project
+- Active community
+- Need support forum
+
+**For template users:**
+- Not necessary initially
+- Can enable later if community grows
+
 ### Verification Checklist
 
 After configuring repository settings, verify:
 
+**Pull Request Settings:**
 - [ ] "Update branch" button appears on PRs when behind base
 - [ ] "Enable auto-merge" button appears on PRs
 - [ ] Merged PRs automatically delete their branches
+- [ ] Linked issues auto-close when PR is merged
+
+**GitHub Actions:**
 - [ ] auto-pr.yml workflow can create PRs from claude/** branches
 - [ ] release-please.yml workflow can create release PRs
 - [ ] GitHub Actions are pinned to commit SHAs (if enabled)
+- [ ] Default token permissions are read-only
+- [ ] Fork workflows require approval
+
+**Security:**
+- [ ] Dependabot alerts are enabled
+- [ ] Dependabot security updates are enabled
+- [ ] Secret scanning is enabled
+- [ ] Push protection is enabled (if available)
+- [ ] Private vulnerability reporting is enabled
+- [ ] CodeQL analysis is running
+
+**Merge Strategy:**
+- [ ] Squash merging is enabled
+- [ ] Default to PR title for squash commits
+- [ ] Merge commits disabled (optional)
+
+**Repository Features:**
+- [ ] Issues are enabled with templates
+- [ ] Wiki is disabled (docs/ directory used instead)
+- [ ] Other features configured as needed
 
 ---
 
@@ -545,6 +908,50 @@ After setting up branch protection, verify:
 ---
 
 ## Summary
+
+### Quick Reference: All Repository Settings
+
+**Pull Request Settings (Settings → General → Pull Requests):**
+```
+✅ Always suggest updating pull request branches
+✅ Allow auto-merge
+✅ Automatically delete head branches
+✅ Auto-close issues with merged linked pull requests
+✅ Allow squash merging (recommended)
+✅ Default to pull request title for squash commits
+⚠️ Allow merge commits (disable for cleaner history)
+⚠️ Allow rebase merging (optional, advanced users)
+```
+
+**GitHub Actions (Settings → Actions → General):**
+```
+✅ Allow GitHub Actions to create and approve pull requests
+✅ Default GITHUB_TOKEN: Read-only
+✅ Fork PR workflows: Require approval for first-time contributors
+```
+
+**Security Settings (Settings → Code security and analysis):**
+```
+✅ Require actions pinned to commit SHA (if available)
+✅ Dependabot alerts
+✅ Dependabot security updates
+⚠️ Dependabot version updates (skip - use Renovate)
+✅ Code scanning (CodeQL)
+✅ Secret scanning
+✅ Push protection (if available)
+✅ Private vulnerability reporting
+```
+
+**Repository Features (Settings → General → Features):**
+```
+✅ Issues (with templates)
+⚠️ Wikis (disable - use docs/ instead)
+⚠️ Projects (optional)
+⚠️ Discussions (optional)
+⚠️ Sponsorships (optional)
+```
+
+### Branch Protection Rules
 
 **Minimum Setup (Solo Developer):**
 
