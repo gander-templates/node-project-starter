@@ -107,7 +107,7 @@ npm install --ignore-scripts @gander-templates/node-project-starter
 
 ### Branch Protection
 
-The `main` branch is protected with:
+The `main` branch should be protected with:
 
 - Required PR reviews before merge
 - Required status checks (tests, security scans)
@@ -115,7 +115,7 @@ The `main` branch is protected with:
 - Force push disabled
 - Deletion disabled
 
-See [docs/deployment/branch-protection.md](docs/deployment/branch-protection.md) for setup instructions.
+Configure in Settings → Branches → Add rule for `main`.
 
 ## Security Best Practices
 
@@ -128,7 +128,7 @@ When using this template for your project:
    - Configure in Settings → Secrets and variables → Actions
 
 2. **Enable Branch Protection**:
-   - Follow [branch-protection.md](docs/deployment/branch-protection.md)
+   - Go to Settings → Branches → Add rule for `main`
    - Require PR reviews
    - Require status checks to pass
 
@@ -235,7 +235,6 @@ In case of a security incident:
 For security concerns, use:
 
 - **GitHub Security Advisories**: [Report a vulnerability](https://github.com/gander-templates/node-project-starter/security/advisories/new)
-- **Security Documentation**: [docs/deployment/security.md](docs/deployment/security.md)
 
 ---
 
