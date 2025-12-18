@@ -43,6 +43,10 @@ jobs:
           # Get all commits on this branch that aren't on main
           COMMITS=$(git log origin/main..HEAD --pretty=format:"- %s" | head -n 20)
 
+          # Get first commit title for PR title
+          FIRST_COMMIT_TITLE=$(git log origin/main..HEAD --pretty=format:"%s" | tail -n 1)
+          echo "first_title=$FIRST_COMMIT_TITLE" >> "$GITHUB_OUTPUT"
+
           # Create PR body
           {
             echo "body<<EOF"
@@ -61,7 +65,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh pr create \
-            --title "Claude implementation: ${{ steps.metadata.outputs.session_id }}" \
+            --title "${{ steps.commits.outputs.first_title }}" \
             --body "${{ steps.commits.outputs.body }}" \
             --base main \
             --head "${{ steps.metadata.outputs.branch }}" \
