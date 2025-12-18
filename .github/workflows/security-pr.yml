@@ -32,10 +32,7 @@ jobs:
   # NPM audit for vulnerabilities
   npm-audit:
     needs: changes
-    # Skip on template repository (no package-lock.json)
-    if: |
-      github.repository != 'gander-templates/node-project-starter' &&
-      needs.changes.outputs.security == 'true'
+    if: needs.changes.outputs.security == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -46,6 +43,13 @@ jobs:
         with:
           node-version: 22
           cache: 'npm'
+
+      - name: Create package-lock.json if missing
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "package-lock.json not found, running npm install to create it"
+            npm install --package-lock-only
+          fi
 
       - name: Install dependencies
         run: npm ci
@@ -57,10 +61,7 @@ jobs:
   # Generate SBOM (Software Bill of Materials)
   sbom:
     needs: changes
-    # Skip on template repository (no package-lock.json)
-    if: |
-      github.repository != 'gander-templates/node-project-starter' &&
-      needs.changes.outputs.security == 'true'
+    if: needs.changes.outputs.security == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -71,6 +72,13 @@ jobs:
         with:
           node-version: 22
           cache: 'npm'
+
+      - name: Create package-lock.json if missing
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "package-lock.json not found, running npm install to create it"
+            npm install --package-lock-only
+          fi
 
       - name: Install dependencies
         run: npm ci
@@ -88,10 +96,7 @@ jobs:
   # License compliance check
   license-check:
     needs: changes
-    # Skip on template repository (no package-lock.json)
-    if: |
-      github.repository != 'gander-templates/node-project-starter' &&
-      needs.changes.outputs.security == 'true'
+    if: needs.changes.outputs.security == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -102,6 +107,13 @@ jobs:
         with:
           node-version: 22
           cache: 'npm'
+
+      - name: Create package-lock.json if missing
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "package-lock.json not found, running npm install to create it"
+            npm install --package-lock-only
+          fi
 
       - name: Install dependencies
         run: npm ci

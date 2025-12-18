@@ -42,9 +42,7 @@ jobs:
   # Quick fuzz for PRs
   fuzz-pr:
     needs: changes
-    # Skip on template repository (no package-lock.json)
     if: |
-      github.repository != 'gander-templates/node-project-starter' &&
       github.event_name == 'pull_request' &&
       needs.changes.outputs.src == 'true'
     runs-on: ubuntu-latest
@@ -57,6 +55,13 @@ jobs:
         with:
           node-version: 22
           cache: 'npm'
+
+      - name: Create package-lock.json if missing
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "package-lock.json not found, running npm install to create it"
+            npm install --package-lock-only
+          fi
 
       - name: Install dependencies
         run: npm ci
@@ -93,6 +98,13 @@ jobs:
         with:
           node-version: 22
           cache: 'npm'
+
+      - name: Create package-lock.json if missing
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "package-lock.json not found, running npm install to create it"
+            npm install --package-lock-only
+          fi
 
       - name: Install dependencies
         run: npm ci
