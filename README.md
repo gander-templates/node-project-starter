@@ -37,36 +37,50 @@
 4. **Configure repository settings** (recommended):
 
    **Pull Request Settings** (Settings → General → Pull Requests):
-   - ✅ Always suggest updating pull request branches
-   - ✅ Allow auto-merge
-   - ✅ Automatically delete head branches
-   - ✅ Auto-close issues with merged linked pull requests
-   - ✅ Allow squash merging + Default to pull request title
-   - ⚠️ Disable merge commits (for cleaner history)
+   - ❌ **Allow merge commits** - DISABLE for cleaner history
+   - ✅ **Allow squash merging** - ENABLE
+     - Set "Default commit message" to "Default to pull request title"
+   - ⚠️ **Allow rebase merging** - Optional (not required)
+   - ✅ **Always suggest updating pull request branches** - ENABLE
+   - ✅ **Allow auto-merge** - ENABLE
+   - ✅ **Automatically delete head branches** - ENABLE
 
-   **GitHub Actions** (Settings → Actions → General → Workflow permissions):
-   - ✅ Allow GitHub Actions to create and approve pull requests
-   - ✅ Default GITHUB_TOKEN: Read-only (least privilege)
-   - ✅ Fork workflows: Require approval for first-time contributors
+   **GitHub Actions** (Settings → Actions → General):
 
-   **Security Settings** (Settings → Code security and analysis):
-   - ✅ Dependabot alerts (vulnerability notifications)
-   - ✅ Dependabot security updates (auto PRs for security issues)
-   - ❌ **Dependabot version updates - DISABLE** (use Renovate instead)
-   - ✅ Secret scanning + Push protection
-   - ✅ Code scanning (CodeQL)
-   - ✅ Private vulnerability reporting
+   *Workflow permissions:*
+   - ✅ **Read repository contents and packages permissions** - SELECT (least privilege)
+     - NOT "Read and write permissions"
+   - ✅ **Allow GitHub Actions to create and approve pull requests** - ENABLE
+
+   *Fork pull request workflows from outside collaborators:*
+   - ✅ **Require approval for first-time contributors** - SELECT
+     - Or "Require approval for first-time contributors who are new to GitHub"
+
+   **Security Settings** (Settings → Security):
+
+   *Code security and analysis / Advanced Security:*
+   - ✅ **Private vulnerability reporting** - ENABLE
+   - ✅ **Dependency graph** - ENABLE (auto-enabled for public repos)
+   - ✅ **Dependabot alerts** - ENABLE
+   - ✅ **Dependabot security updates** - ENABLE
+   - ❌ **Dependabot version updates** - DISABLE (use Renovate instead)
+   - ✅ **Code scanning** (CodeQL) - ENABLE with default setup
+   - ✅ **Secret scanning** - ENABLE (auto-enabled for public repos)
+   - ✅ **Push protection** - ENABLE
 
    **Renovate Setup** (Dependency Management):
    - Install: https://github.com/apps/renovate
+   - Select organization and grant access to repositories
    - Config in `/renovate.json`: auto-merge patch updates + minor devDeps
    - Why Renovate? Better grouping, scheduling, automerge than Dependabot
    - Validate: `npx -p renovate -c 'renovate-config-validator'`
 
    **Repository Features** (Settings → General → Features):
-   - ✅ Issues
-   - ❌ Wikis (use `docs/` instead)
-   - ⚠️ Projects, Discussions, Sponsorships (optional)
+   - ✅ **Issues** - ENABLE
+   - ❌ **Wikis** - DISABLE (use `docs/` folder instead)
+   - ⚠️ **Projects** - Optional
+   - ⚠️ **Discussions** - Optional
+   - ⚠️ **Sponsorships** - Optional
 
 5. **Configure branch protection** (recommended):
 
