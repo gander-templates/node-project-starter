@@ -183,50 +183,351 @@ git commit -m "docs: update API documentation"
 
 ## 🎨 Bundler Configuration
 
-**Template includes:** Both `tsdown` and `pkgroll` pre-configured with ESM + CJS support.
+# tsdown vs pkgroll: Który bundler wybrać do CLI w TypeScript?
 
-### Keep Only tsdown (Recommended)
+**pkgroll wygrywa dla narzędzi CLI** dzięki automatycznej obsłudze shebang i konfiguracji zero-config, podczas gdy tsdown oferuje szybsze buildy, ale wymaga ręcznych workaroundów dla plików wykonywalnych. Dla złożonego CLI z subkomendami i wieloma kanałami dystrybucji (npm, npx, bin, deno compile), pkgroll zapewnia mniej problemów out-of-the-box, ale tsdown może być lepszy przy intensywnym development workflow dzięki 2x szybszemu buildowi.
 
-```bash
-npm uninstall pkgroll
-# Remove build:pkgroll script from package.json
-```
+---
 
-**Best for:** Most projects, framework components, projects needing plugins
+## Automatyczna obsługa shebang decyduje o wyborze
 
-### Keep Only pkgroll
+Najważniejsza różnica między bundlerami dla CLI to sposób obsługi **hashbang** (`#!/usr/bin/env node`). pkgroll automatycznie dodaje shebang do wszystkich plików zdefiniowanych w `bin` field package.json, co eliminuje całą klasę problemów z wykonywalnością. tsdown, zaprojektowany jako "The Elegant Library Bundler", nie posiada natywnej obsługi shebang i wymaga workaroundu:
 
-```bash
-rm tsdown.config.ts
-npm uninstall tsdown
-# Remove build:tsdown script from package.json
-```
-
-**Best for:** Simple utilities, ESM-only packages, zero-config preference
-
-### Remove CommonJS Support (ESM-only)
-
-**In `tsdown.config.ts`:**
 ```typescript
+// tsdown.config.ts - wymagany workaround
 export default defineConfig({
-  format: ["esm"], // Remove "cjs"
-});
+  entry: { cli: 'src/cli.ts' },
+  outputOptions: {
+    banner: '#!/usr/bin/env node\n',  // Ręczna injekcja
+  },
+})
 ```
 
-**In `package.json`:**
+pkgroll miał historycznie kilka bugów z shebang (hashbang w złym miejscu przy ESM, brak na Windows, znikający przy obecności `main` key), ale **wszystkie zostały naprawione** do wersji 2.14.2 (lipiec 2025). Teraz system działa niezawodnie - wystarczy zdefiniować `bin` w package.json.
+
+---
+
+## Porównanie technologii i wydajności
+
+| Aspekt | tsdown | pkgroll |
+|--------|--------|---------|
+| **Silnik bundlera** | Rolldown (Rust) | Rollup (JavaScript) |
+| **Transformacje TS** | Oxc (Rust) | esbuild |
+| **Generacja .d.ts** | rolldown-plugin-dts | rollup-plugin-dts |
+| **Szybkość buildu** | ~2x szybszy niż tsup | Wolniejszy (JS-based) |
+| **Tree-shaking** | Rolldown-based | Rollup (najlepszy w klasie) |
+| **Minifikacja** | Oxc (alpha - może mieć bugi) | esbuild (stabilny) |
+
+tsdown jest **do 8x szybszy** przy generowaniu TypeScript declarations dzięki Rust-owemu backendowi. Przy częstym rebuildowaniu podczas developmentu ta różnica jest odczuwalna. Jednak pkgroll oferuje **najlepszy tree-shaking** w ekosystemie dzięki Rollup, co przekłada się na mniejsze bundle size dla finalnych buildów.
+
+---
+
+## Konfiguracja dla złożonego CLI z subkomendami
+
+### Podejście pkgroll (zero-config)
+
 ```json
 {
+  "name": "my-cli-tool",
+  "type": "module",
+  "bin": {
+    "mycli": "./dist/cli.js",
+    "mycli-init": "./dist/commands/init.js"
+  },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-      // Remove "require" line
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
     }
+  },
+  "scripts": {
+    "build": "pkgroll --sourcemap --clean-dist"
   }
 }
 ```
 
-See full configuration guide in [Bundler Setup](docs/bundler-setup.md)
+pkgroll automatycznie wykrywa entry pointy z `bin` i `exports`, dodaje shebangi gdzie trzeba, i generuje odpowiednie formaty. **Nie ma pliku konfiguracyjnego** - package.json jest "single source of truth".
+
+### Podejście tsdown (explicit config)
+
+```typescript
+// tsdown.config.ts
+import { defineConfig } from 'tsdown'
+
+export default defineConfig({
+  entry: {
+    cli: 'src/cli.ts',
+    'commands/init': 'src/commands/init.ts',
+    'commands/build': 'src/commands/build.ts',
+    index: 'src/index.ts',
+  },
+  format: ['esm'],
+  platform: 'node',
+  target: 'node20',
+  shims: true,          // __dirname/__filename w ESM
+  sourcemap: true,
+  clean: true,
+  outputOptions: {
+    banner: '#!/usr/bin/env node\n',
+  },
+})
+```
+
+tsdown oferuje większą kontrolę i migrację z tsup (`npx tsdown migrate`), ale wymaga więcej konfiguracji dla CLI.
+
+---
+
+## Kompatybilność z bibliotekami CLI
+
+Obie bundlery **externalizują dependencies** domyślnie (pakiety z `dependencies` vs `devDependencies`), co oznacza że większość bibliotek CLI nie jest bundlowana. Dla heavy dependencies jak inquirer, commander czy chalk to zalecane podejście:
+
+| Biblioteka | tsdown | pkgroll | Uwagi |
+|------------|--------|---------|-------|
+| commander.js | ✅ | ✅ | Externalizuj |
+| yargs | ✅ | ✅ | Externalizuj |
+| cac | ✅ | ✅ | ESM-only, działa |
+| inquirer | ⚠️ | ⚠️ | Dynamic requires - externalizuj |
+| prompts | ✅ | ✅ | Externalizuj |
+| chalk v5+ | ✅ | ✅ | ESM-only, działa |
+| picocolors | ✅ | ✅ | Może bundlować (tiny) |
+| ora | ✅ | ✅ | ESM-only, externalizuj |
+| cosmiconfig | ⚠️ | ⚠️ | Dynamic requires - externalizuj |
+
+**ESM-only packages** (chalk 5+, ora, cac) działają w obu bundlerach bez problemów. Pakiety używające **dynamic requires** (inquirer, cosmiconfig) lepiej trzymać jako external dependencies.
+
+---
+
+## Bundle size i tree-shaking dla CLI
+
+### Efektywność tree-shaking
+
+pkgroll z Rollup oferuje **najlepszy tree-shaking** - szczególnie istotne dla CLI z wieloma subkomendami, gdzie użytkownik wywołuje tylko jedną na raz. Rollup lepiej eliminuje nieużywany kod między modułami.
+
+tsdown z Rolldown ma tree-shaking **włączony domyślnie** (`--no-treeshake` wyłącza), ale może być mniej agresywny niż Rollup w edge cases.
+
+### Lazy loading subkomend
+
+Żaden bundler nie ma wbudowanego lazy loading, ale można go zaimplementować manualnie:
+
+```typescript
+// src/cli.ts
+const commands = {
+  init: () => import('./commands/init.js'),
+  build: () => import('./commands/build.js'),
+  deploy: () => import('./commands/deploy.js'),
+}
+
+const [command] = process.argv.slice(2)
+const handler = commands[command]
+if (handler) {
+  const module = await handler()
+  await module.run()
+}
+```
+
+Oba bundlery obsługują dynamic imports, więc ten pattern działa.
+
+---
+
+## Przygotowanie do standalone binaries
+
+### deno compile compatibility
+
+Dla deno compile potrzebujesz bundla jako pojedynczy plik ESM:
+
+```bash
+# tsdown
+tsdown src/cli.ts --format esm --minify
+
+# pkgroll
+pkgroll --minify
+```
+
+Następnie:
+```bash
+deno compile --output mycli --allow-read --allow-write ./dist/cli.js
+```
+
+### bun build --compile
+
+Bun ma własny system kompilacji standalone:
+
+```bash
+bun build ./src/cli.ts --compile --outfile mycli
+```
+
+Nie wymaga wcześniejszego bundlowania - Bun robi wszystko sam. Output zawiera runtime (~45-90MB).
+
+### pkg/nexe compatibility
+
+Oba bundlery produkują standardowy Node.js JavaScript, więc output jest kompatybilny z pkg i nexe:
+
+```bash
+# Po zbundlowaniu
+pkg ./dist/cli.js --targets node20-linux-x64,node20-win-x64,node20-macos-x64
+```
+
+### vercel/ncc jako alternatywa
+
+ncc to zero-config compiler od Vercel, który produkuje single-file output:
+
+```bash
+ncc build src/cli.ts -o dist
+```
+
+Może być prostszy dla prostych CLI, ale ma problemy z dynamic requires.
+
+---
+
+## Developer experience i debugging
+
+### Watch mode
+
+Oba bundlery mają watch mode:
+
+```bash
+tsdown --watch
+pkgroll --watch
+```
+
+tsdown jest **znacząco szybszy** przy rebuildach dzięki Rust backend.
+
+### Source maps
+
+```bash
+tsdown --sourcemap
+pkgroll --sourcemap
+```
+
+Użycie przy runtime:
+```bash
+node --enable-source-maps ./dist/cli.js
+```
+
+**Uwaga**: pkgroll ma udokumentowany bug (#84) z offsetem linii w sourcemaps, tsdown działa lepiej.
+
+### Debugging w VS Code
+
+```json
+{
+  "type": "node",
+  "request": "launch",
+  "name": "Debug CLI",
+  "program": "${workspaceFolder}/dist/cli.js",
+  "args": ["build", "--verbose"],
+  "sourceMaps": true,
+  "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+}
+```
+
+---
+
+## Edge cases krytyczne dla CLI
+
+### __dirname i __filename w ESM
+
+tsdown z `shims: true` automatycznie dodaje:
+```javascript
+import { fileURLToPath } from 'node:url'
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+```
+
+pkgroll automatycznie shimuje `import.meta.dirname` i `import.meta.filename` w CJS output.
+
+### process.exit() handling
+
+Oba bundlery mogą agresywnie tree-shake kod po `process.exit()`. Bezpieczny pattern:
+
+```typescript
+async function main() {
+  try {
+    await runCLI()
+    process.exit(0)
+  } catch (e) {
+    console.error(e)
+    process.exit(1)
+  }
+}
+main()
+```
+
+### Native modules
+
+pkgroll **automatycznie obsługuje** pliki `.node` - kopiuje do `dist/natives/` i przepisuje importy. tsdown nie ma udokumentowanej obsługi - lepiej externalizować pakiety z native modules.
+
+---
+
+## Znane problemy i gotchas
+
+### pkgroll (19 open issues)
+- CJS default exports nie są unwrapowane pod `default` property (#101)
+- Sourcemap offset bugs (#84)
+- Brak config file API - wszystko przez CLI (#98 - requested feature)
+- Brak programmatic API (#137)
+
+### tsdown (37 open issues)
+- CSS handling problematyczny (#627, #653)
+- Yarn PnP config loading fails (#639)
+- DTS issues z TypeScript path mappings w monorepo (#594, #523)
+- `__dirname` shim nie replikuje dokładnie `import.meta.dirname` (#572)
+- Minifikacja powoduje błędy z Express routes (#462)
+
+---
+
+## Rekomendacja dla Twojego use case
+
+Dla **złożonego CLI z subkomendami, interactive prompts i wieloma distribution targets** (npm, npx, bin, deno compile):
+
+### Wybierz pkgroll jeśli:
+- Preferujesz zero-config i package.json jako źródło prawdy
+- Chcesz automatyczną obsługę shebang bez workaroundów
+- Potrzebujesz najlepszego tree-shaking dla mniejszych bundli
+- Używasz native modules
+- Cenisz stabilność (mature project, quick bug fixes)
+
+### Wybierz tsdown jeśli:
+- Intensywnie rozwijasz CLI i potrzebujesz szybkich rebuildów
+- Migrujesz z tsup (wbudowane narzędzie migracji)
+- Potrzebujesz programmatic API
+- Planujesz używać frameworkowych pluginów (Vue, Solid, Svelte)
+- Chcesz explicit config file z defineConfig()
+
+### Moja rekomendacja
+
+**Zacznij od pkgroll** - automatyczna obsługa shebang i zero-config znacząco redukują friction przy budowaniu CLI. Jeśli buildy staną się bottleneckiem (duży projekt, częste rebuildy), rozważ migrację do tsdown z przygotowanymi workaroundami dla shebang.
+
+Struktura projektu powinna wyglądać tak:
+
+```
+my-cli/
+├── src/
+│   ├── cli.ts           # Main entry (hashbang dodawany automatycznie)
+│   ├── index.ts         # Library exports (programmatic API)
+│   └── commands/
+│       ├── init.ts
+│       └── build.ts
+├── package.json         # bin + exports = pkgroll config
+└── tsconfig.json
+```
+
+Package.json:
+```json
+{
+  "type": "module",
+  "bin": { "mycli": "./dist/cli.js" },
+  "exports": {
+    ".": { "import": "./dist/index.mjs" }
+  },
+  "scripts": {
+    "build": "pkgroll --sourcemap",
+    "dev": "pkgroll --watch"
+  },
+  "engines": { "node": ">=20" }
+}
+```
+
+Ta konfiguracja działa out-of-the-box dla npm, npx i globalnej instalacji, a output można łatwo przekazać do deno compile lub pkg dla standalone binaries.
 
 ## 📖 Documentation
 
